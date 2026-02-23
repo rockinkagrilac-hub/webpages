@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,13 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PRODUCTS, PHONE_NUMBERS, Product } from '@/lib/data';
 import { useCart } from '@/lib/cart-context';
 import { CartProvider } from '@/lib/cart-context';
-import { ArrowLeft, ShoppingCart, Check, Download, MessageCircle, Sparkles, Star } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Check, Download, MessageCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
 import { createElement, use, useEffect, useMemo, useState } from 'react';
+
+type DetailTab = 'description' | 'specs' | 'video' | 'model3d';
 
 function ProductDetailContent({ productId }: { productId: string }) {
   const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
@@ -19,7 +21,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const [added, setAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [openZoom, setOpenZoom] = useState(false);
-  const [activeMedia, setActiveMedia] = useState<'video' | 'model3d'>('video');
+  const [activeTab, setActiveTab] = useState<DetailTab>('description');
   const { addItem } = useCart();
 
   const product = allProducts.find((p) => p.id === productId);
@@ -48,6 +50,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
 
   useEffect(() => {
     setActiveImageIndex(0);
+    setActiveTab('description');
   }, [productId]);
 
   const relatedProducts = useMemo(() => {
@@ -83,6 +86,16 @@ function ProductDetailContent({ productId }: { productId: string }) {
     URL.revokeObjectURL(url);
   };
 
+  const model3dUrl = product?.model3dEmbedUrl?.trim() || '';
+  const has3dModel = /^https?:\/\/.+/i.test(model3dUrl);
+  const isGlbModel = /\.glb(\?|$)/i.test(model3dUrl);
+
+  useEffect(() => {
+    if (activeTab === 'model3d' && !has3dModel) {
+      setActiveTab('video');
+    }
+  }, [activeTab, has3dModel]);
+
   if (isLoadingProducts) {
     return (
       <div className="min-h-screen bg-background">
@@ -112,9 +125,6 @@ function ProductDetailContent({ productId }: { productId: string }) {
   }
 
   const currentImage = images[activeImageIndex] || '/placeholder.svg';
-  const model3dUrl = product.model3dEmbedUrl?.trim() || '';
-  const has3dModel = Boolean(model3dUrl);
-  const isGlbModel = /\.glb(\?|$)/i.test(model3dUrl);
   const waPhone = PHONE_NUMBERS.tier1.replace(/\D/g, '');
   const waText = encodeURIComponent(
     `Hola Rockink IMM, quiero informacion de este producto: ${product.name} (ID: ${product.id})`
@@ -132,155 +142,175 @@ function ProductDetailContent({ productId }: { productId: string }) {
         </Link>
       </div>
 
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={() => setOpenZoom(true)}
-              className="relative w-full h-[420px] bg-card rounded-lg overflow-hidden border border-border"
-            >
-              <Image src={currentImage} alt={product.name} fill className="object-cover" />
-            </button>
-
-            <div className="grid grid-cols-4 gap-3">
-              {images.map((img, idx) => (
+      <section className="max-w-7xl mx-auto px-4 py-6">
+        <Card className="border-border/60">
+          <CardContent className="p-5 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <button
-                  key={`${product.id}-${idx}`}
                   type="button"
-                  onClick={() => setActiveImageIndex(idx)}
-                  className={`relative h-24 rounded-md overflow-hidden border ${
-                    idx === activeImageIndex ? 'border-primary' : 'border-border'
+                  onClick={() => setOpenZoom(true)}
+                  className="relative w-full h-[340px] sm:h-[460px] bg-card rounded-xl overflow-hidden border border-border"
+                >
+                  <Image src={currentImage} alt={product.name} fill className="object-cover" />
+                </button>
+                <div className="grid grid-cols-4 gap-2">
+                  {images.map((img, idx) => (
+                    <button
+                      key={`${product.id}-${idx}`}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative h-16 sm:h-20 rounded-md overflow-hidden border ${
+                        idx === activeImageIndex ? 'border-primary ring-2 ring-primary/30' : 'border-border'
+                      }`}
+                    >
+                      <Image src={img} alt={`${product.name} ${idx + 1}`} fill className="object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <span className="inline-block bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold mb-3">
+                    {product.category}
+                  </span>
+                  <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">{product.name}</h1>
+                  <p className="text-muted-foreground">{product.description}</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[0, 1, 2].map((i) => (
+                    <Card key={i} className="border-primary/20">
+                      <CardContent className="p-3">
+                        <p className="text-sm line-clamp-2">
+                          {product.specifications[i] || 'Calidad premium para mejor rendimiento'}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div>
+                  {product.inStock ? (
+                    <span className="text-green-600 font-semibold flex items-center gap-2">
+                      <Check className="w-5 h-5" />
+                      En stock
+                    </span>
+                  ) : (
+                    <span className="text-red-600 font-semibold">Agotado</span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Button
+                    onClick={handleAddCart}
+                    disabled={!product.inStock}
+                    className="bg-primary hover:bg-primary/90 text-base py-6"
+                  >
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    {added ? 'Agregado' : 'Agregar al carrito'}
+                  </Button>
+                  <a href={waLink} target="_blank" rel="noreferrer">
+                    <Button variant="outline" className="w-full text-base py-6">
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      WhatsApp
+                    </Button>
+                  </a>
+                </div>
+
+                <Button onClick={handleDownloadFicha} variant="ghost" className="w-full sm:w-auto">
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar ficha tecnica
+                </Button>
+
+                {added && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-center">
+                    Producto agregado exitosamente
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 py-2">
+        <Card className="border-border/60">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                type="button"
+                onClick={() => setActiveTab('description')}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
+                  activeTab === 'description'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                Descripcion
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('specs')}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
+                  activeTab === 'specs'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                Especificaciones
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('video')}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
+                  activeTab === 'video'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                Video
+              </button>
+              {has3dModel && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('model3d')}
+                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
+                    activeTab === 'model3d'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border hover:border-primary/50'
                   }`}
                 >
-                  <Image src={img} alt={`${product.name} ${idx + 1}`} fill className="object-cover" />
+                  Modelo 3D
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <span className="inline-block bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold mb-3">
-              {product.category}
-            </span>
-
-            <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">{product.name}</h1>
-            <p className="text-lg text-muted-foreground mb-6">{product.description}</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              {[0, 1, 2].map((i) => (
-                <Card key={i} className="border-primary/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-2">
-                      <Sparkles className="w-4 h-4 text-primary mt-0.5" />
-                      <p className="text-sm text-foreground line-clamp-2">
-                        {product.specifications[i] || 'Calidad premium para mejor rendimiento'}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              )}
             </div>
 
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <h3 className="font-bold text-primary mb-3">Especificaciones</h3>
+            {activeTab === 'description' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-primary">Descripcion del producto</h2>
+                <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+              </div>
+            )}
+
+            {activeTab === 'specs' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-primary">Especificaciones tecnicas</h2>
                 <ul className="space-y-2">
                   {product.specifications.map((spec, idx) => (
                     <li key={idx} className="flex items-start gap-3">
                       <Check className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
                       <span className="text-foreground">{spec}</span>
                     </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <div className="mb-6">
-              {product.inStock ? (
-                <span className="text-green-600 font-semibold flex items-center gap-2">
-                  <Check className="w-5 h-5" />
-                  En Stock
-                </span>
-              ) : (
-                <span className="text-red-600 font-semibold">Agotado</span>
-              )}
+                ))}
+              </ul>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              <Button
-                onClick={handleAddCart}
-                disabled={!product.inStock}
-                className="bg-primary hover:bg-primary/90 text-lg py-6"
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                {added ? 'Agregado' : 'Agregar al carrito'}
-              </Button>
-
-              <a href={waLink} target="_blank" rel="noreferrer">
-                <Button variant="outline" className="w-full text-lg py-6">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Comprar por WhatsApp
-                </Button>
-              </a>
-            </div>
-
-            <Button onClick={handleDownloadFicha} variant="ghost" className="w-full sm:w-auto">
-              <Download className="w-4 h-4 mr-2" />
-              Descargar ficha tecnica
-            </Button>
-
-            {added && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-center mt-4">
-                Producto agregado exitosamente
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-card py-12 px-4 mt-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-primary">Centro Multimedia</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Cambia entre video y modelo 3D en un solo bloque.
-            </p>
-          </div>
-
-          <Card className="border-border/60">
-            <CardContent className="p-3 sm:p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveMedia('video')}
-                  className={`rounded-lg px-4 py-3 text-left border transition ${
-                    activeMedia === 'video'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <p className="font-semibold text-sm">Video</p>
-                  <p className="text-xs text-muted-foreground">Demostración del producto</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => has3dModel && setActiveMedia('model3d')}
-                  disabled={!has3dModel}
-                  className={`rounded-lg px-4 py-3 text-left border transition ${
-                    activeMedia === 'model3d'
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50'
-                  } ${!has3dModel ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <p className="font-semibold text-sm">Vista 3D</p>
-                  <p className="text-xs text-muted-foreground">
-                    {has3dModel ? 'Interactúa con el modelo' : 'No disponible'}
-                  </p>
-                </button>
-              </div>
-
-              {activeMedia === 'video' && (
+            {activeTab === 'video' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-primary">Video del producto</h2>
                 <div className="aspect-video bg-black rounded-lg overflow-hidden">
                   <iframe
                     width="100%"
@@ -293,87 +323,51 @@ function ProductDetailContent({ productId }: { productId: string }) {
                     className="w-full h-full"
                   />
                 </div>
-              )}
-
-              {activeMedia === 'model3d' && has3dModel && (
-                <div className="space-y-3">
-                  {isGlbModel ? (
-                    <>
-                      <Script
-                        type="module"
-                        src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
-                        strategy="afterInteractive"
-                      />
-                      <div className="w-full h-[460px] rounded-lg overflow-hidden bg-black/80 border border-border">
-                        {createElement('model-viewer', {
-                          src: model3dUrl,
-                          alt: `Modelo 3D de ${product.name}`,
-                          poster: product.image,
-                          class: 'w-full h-full',
-                          style: { width: '100%', height: '100%' },
-                          'camera-controls': true,
-                          'auto-rotate': true,
-                          'auto-rotate-delay': '1200',
-                          'shadow-intensity': '1',
-                          'interaction-prompt': 'auto',
-                        })}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={model3dUrl}
-                        title="Modelo 3D del producto"
-                        frameBorder="0"
-                        allowFullScreen
-                        className="w-full h-full"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeMedia === 'model3d' && !has3dModel && (
-                <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-                  Este producto todavia no tiene modelo 3D configurado.
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveMedia('video')}
-                  className={`relative h-28 rounded-lg overflow-hidden border text-left ${
-                    activeMedia === 'video' ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <Image src={product.image || '/placeholder.svg'} alt="Miniatura de video" fill className="object-cover" />
-                  <div className="absolute inset-0 bg-black/45 flex items-end p-2">
-                    <span className="text-white text-xs font-semibold">Video de YouTube</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => has3dModel && setActiveMedia('model3d')}
-                  disabled={!has3dModel}
-                  className={`relative h-28 rounded-lg overflow-hidden border text-left ${
-                    activeMedia === 'model3d' ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'
-                  } ${!has3dModel ? 'opacity-55 cursor-not-allowed' : ''}`}
-                >
-                  <Image src={product.image || '/placeholder.svg'} alt="Miniatura de vista 3D" fill className="object-cover" />
-                  <div className="absolute inset-0 bg-black/45 flex items-end p-2">
-                    <span className="text-white text-xs font-semibold">
-                      {has3dModel ? 'Modelo 3D' : '3D no disponible'}
-                    </span>
-                  </div>
-                </button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+
+            {activeTab === 'model3d' && has3dModel && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-primary">Modelo 3D</h2>
+                {isGlbModel ? (
+                  <>
+                    <Script
+                      type="module"
+                      src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
+                      strategy="afterInteractive"
+                    />
+                    <div className="w-full h-[440px] rounded-lg overflow-hidden bg-black/80 border border-border">
+                      {createElement('model-viewer', {
+                        src: model3dUrl,
+                        alt: `Modelo 3D de ${product.name}`,
+                        poster: product.image,
+                        class: 'w-full h-full',
+                        style: { width: '100%', height: '100%' },
+                        'camera-controls': true,
+                        'auto-rotate': true,
+                        'auto-rotate-delay': '1200',
+                        'shadow-intensity': '1',
+                        'interaction-prompt': 'auto',
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={model3dUrl}
+                      title="Modelo 3D del producto"
+                      frameBorder="0"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="max-w-7xl mx-auto px-4 py-12">
@@ -405,28 +399,6 @@ function ProductDetailContent({ productId }: { productId: string }) {
         )}
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 pb-12">
-        <h2 className="text-2xl font-bold text-primary mb-6">Lo que valoran nuestros clientes</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            'Excelente calidad y entrega rapida. Muy recomendado para trabajo diario.',
-            'La atencion fue clara y el producto supero expectativas.',
-            'Muy buena relacion calidad-precio y soporte por WhatsApp inmediato.',
-          ].map((review, idx) => (
-            <Card key={idx} className="border-primary/20">
-              <CardContent className="pt-6">
-                <div className="flex gap-1 mb-3">
-                  {[0, 1, 2, 3, 4].map((star) => (
-                    <Star key={star} className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">{review}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
       <footer className="bg-primary text-primary-foreground py-8 px-4 mt-12">
         <div className="max-w-7xl mx-auto text-center">
           <p className="mb-2">© 2026 Rockink IMM - E-commerce Agropecuario</p>
@@ -454,4 +426,3 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     </CartProvider>
   );
 }
-
