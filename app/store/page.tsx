@@ -53,6 +53,7 @@ function isPajillaToroProduct(product: Product) {
 }
 
 function StoreContent() {
+  const PRODUCTS_PER_PAGE = 16;
   const { addItem } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
@@ -64,6 +65,7 @@ function StoreContent() {
   const [selectedTreeFilters, setSelectedTreeFilters] = useState<string[]>([]);
   const [onlyOffers, setOnlyOffers] = useState(false);
   const [sortBy, setSortBy] = useState<'relevance' | 'name_asc' | 'name_desc'>('relevance');
+  const [currentPage, setCurrentPage] = useState(1);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -127,6 +129,12 @@ function StoreContent() {
     return base;
   }, [allProducts, isPajillasView, selectedCategory, selectedBrand, onlyOffers, searchTerm, sortBy]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
   const categoryPreviews = useMemo(
     () =>
       categories.map((category) => {
@@ -174,6 +182,14 @@ function StoreContent() {
       prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
     );
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedBrand, isPajillasView, onlyOffers, sortBy, searchTerm, treeSearchTerm, selectedTreeFilters.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -399,14 +415,19 @@ function StoreContent() {
                   </>
                 )}
               </h2>
-              <p className="text-base text-muted-foreground">{filteredProducts.length} productos disponibles</p>
+              <p className="text-base text-muted-foreground">
+                {filteredProducts.length} productos disponibles
+                {filteredProducts.length > 0 && (
+                  <span>{` · Página ${currentPage} de ${totalPages}`}</span>
+                )}
+              </p>
               {selectedBrand && (
                 <p className="text-sm text-primary mt-1">Filtrando por marca: {selectedBrand}</p>
               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProducts.map((product, idx) => (
+              {paginatedProducts.map((product, idx) => (
                 <div key={product.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
                   <ProductCard
                     product={product}
@@ -416,6 +437,39 @@ function StoreContent() {
                 </div>
               ))}
             </div>
+
+            {filteredProducts.length > PRODUCTS_PER_PAGE && (
+              <div className="flex items-center justify-center gap-2 pt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-full"
+                >
+                  ←
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .slice(Math.max(0, currentPage - 3), Math.max(0, currentPage - 3) + 5)
+                  .map((page) => (
+                    <Button
+                      key={`page-${page}`}
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      onClick={() => setCurrentPage(page)}
+                      className="h-9 w-9 rounded-md p-0"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-full"
+                >
+                  →
+                </Button>
+              </div>
+            )}
 
             {filteredProducts.length === 0 && (
               <div className="text-center py-24">
