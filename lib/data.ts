@@ -1,4 +1,4 @@
-export interface Product {
+﻿export interface Product {
   id: string;
   name: string;
   description: string;
@@ -36,8 +36,8 @@ export const PRODUCTS: Product[] = [
   {
     id: '1',
     name: 'Arete Visual Ganadero',
-    description: 'Identificacion visual de alta duracion para manejo de ganado.',
-    category: 'Identificacion Animal',
+    description: 'identificación visual de alta duracion para manejo de ganado.',
+    category: 'identificación Animal',
     image: 'https://images.unsplash.com/photo-1560114928-40f1f1eb26a0?w=900&h=900&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1560114928-40f1f1eb26a0?w=900&h=900&fit=crop',
@@ -51,9 +51,9 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: '2',
-    name: 'Equipo de Ordeno Portatil',
-    description: 'Unidad compacta para operaciones de ordeno eficientes en campo.',
-    category: 'Ordeño',
+    name: 'Equipo de Ordeño Portatil',
+    description: 'Unidad compacta para operaciones de Ordeño eficientes en campo.',
+    category: 'OrdeÃ±o',
     image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=900&h=900&fit=crop',
     images: [
       'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=900&h=900&fit=crop',
@@ -84,7 +84,7 @@ export const PRODUCTS: Product[] = [
   {
     id: '4',
     name: 'Pezonera de Silicona Premium',
-    description: 'Repuesto para sistemas de ordeno con mejor higiene y sellado.',
+    description: 'Repuesto para sistemas de Ordeño con mejor higiene y sellado.',
     category: 'Repuestos',
     image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900&h=900&fit=crop',
     images: [
@@ -118,14 +118,14 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
     id: 'hero-2',
     url: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&h=900&fit=crop',
     badge: 'Calidad que Responde',
-    title: 'Tecnologia para Produccion Animal',
-    description: 'Soluciones robustas para identificacion, reproduccion, ordeno y manejo ganadero.',
+    title: 'Tecnología para Produccion Animal',
+    description: 'Soluciones robustas para identificación, reproducción, Ordeño y manejo ganadero.',
   },
   {
     id: 'hero-3',
     url: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=1600&h=900&fit=crop',
     badge: 'Soporte Especializado',
-    title: 'Acompanamiento Tecnico Comercial',
+    title: 'AcompaÃ±amiento Tecnico Comercial',
     description: 'Te ayudamos a elegir la configuracion correcta segun operacion y tipo de hato.',
   },
 ];

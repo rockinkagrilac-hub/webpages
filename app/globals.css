@@ -272,6 +272,29 @@
   text-wrap: pretty;
 }
 
+.slide-from-left {
+  opacity: 0;
+  transform: translateX(-28px);
+  animation: slideLeftIn 0.9s ease forwards;
+}
+
+.slide-from-right {
+  opacity: 0;
+  transform: translateX(28px);
+  animation: slideRightIn 0.9s ease forwards;
+}
+
+.scroll-anim {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.scroll-anim.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .subtle-border {
   @apply border border-gray-100;
 }
@@ -1339,7 +1362,7 @@
   overflow: hidden;
   transform-style: preserve-3d;
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-  animation: socialCardIn 0.72s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: socialCardIn 0.72s cubic-bezier(0.2, 0.8, 0.2, 1) both, socialRollLeft 1s ease-out both;
   transition: transform 0.28s ease, box-shadow 0.28s ease;
 }
 
@@ -1399,6 +1422,25 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes socialRollLeft {
+  0% {
+    transform: translateX(-90px) rotate(-140deg) scale(0.9);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes slideLeftIn {
+  0% { opacity: 0; transform: translateX(-28px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideRightIn {
+  0% { opacity: 0; transform: translateX(28px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes socialBgFlow {

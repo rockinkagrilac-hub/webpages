@@ -13,9 +13,9 @@ type IntroStage = 'logo' | 'cow' | 'reveal';
 
 type Point = { x: number; y: number };
 
-const TOTAL_INTRO_DURATION = 9200;
-const LOGO_STAGE_END = 3400;
-const COW_STAGE_END = 7600;
+const TOTAL_INTRO_DURATION = 6000;
+const LOGO_STAGE_END = 2000;
+const COW_STAGE_END = 4200;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const easeInOut = (t: number) => t * t * (3 - 2 * t);
@@ -44,50 +44,32 @@ const sampleCircle = (center: Point, radius: number, count: number): Point[] => 
   return points;
 };
 
-const createTreeLogoPoints = (): Point[] => {
+const createRingPoints = (count: number, radius = 0.22): Point[] => {
   const points: Point[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const a = (Math.PI * 2 * i) / count;
+    points.push({ x: Math.cos(a) * radius, y: Math.sin(a) * radius });
+  }
+  return points;
+};
 
-  // Tronco estilizado (tipo trapecio), siguiendo el isotipo de la marca.
-  const trunkBottomY = 0.3;
-  const trunkTopY = -0.05;
-  points.push(...sampleLine({ x: -0.09, y: trunkBottomY }, { x: -0.03, y: trunkTopY }, 42));
-  points.push(...sampleLine({ x: 0.09, y: trunkBottomY }, { x: 0.03, y: trunkTopY }, 42));
-  points.push(...sampleLine({ x: -0.09, y: trunkBottomY }, { x: 0.09, y: trunkBottomY }, 30));
-
-  // Ramas principales.
-  points.push(...sampleLine({ x: -0.01, y: -0.02 }, { x: -0.23, y: -0.03 }, 22));
-  points.push(...sampleLine({ x: -0.02, y: -0.02 }, { x: -0.14, y: 0.08 }, 16));
-  points.push(...sampleLine({ x: 0.0, y: -0.03 }, { x: 0.22, y: -0.02 }, 22));
-  points.push(...sampleLine({ x: 0.03, y: -0.02 }, { x: 0.28, y: 0.08 }, 22));
-  points.push(...sampleLine({ x: 0.02, y: -0.06 }, { x: 0.18, y: -0.14 }, 16));
-  points.push(...sampleLine({ x: -0.01, y: -0.05 }, { x: -0.13, y: -0.12 }, 14));
-  points.push(...sampleLine({ x: 0.0, y: -0.08 }, { x: 0.01, y: -0.19 }, 16));
-
-  // Ramas secundarias para mayor detalle visual.
-  points.push(...sampleLine({ x: -0.1, y: -0.03 }, { x: -0.18, y: -0.1 }, 12));
-  points.push(...sampleLine({ x: -0.12, y: 0.03 }, { x: -0.19, y: 0.13 }, 12));
-  points.push(...sampleLine({ x: 0.11, y: -0.03 }, { x: 0.19, y: -0.11 }, 12));
-  points.push(...sampleLine({ x: 0.16, y: 0.01 }, { x: 0.25, y: 0.13 }, 12));
-  points.push(...sampleLine({ x: 0.04, y: -0.11 }, { x: 0.11, y: -0.2 }, 10));
-  points.push(...sampleLine({ x: -0.04, y: -0.1 }, { x: -0.11, y: -0.19 }, 10));
-
-  // Nodos (bolitas) del arbolito.
-  points.push(...sampleCircle({ x: 0.01, y: -0.21 }, 0.028, 18));
-  points.push(...sampleCircle({ x: -0.23, y: -0.03 }, 0.028, 16));
-  points.push(...sampleCircle({ x: 0.22, y: -0.02 }, 0.028, 16));
-  points.push(...sampleCircle({ x: 0.29, y: 0.09 }, 0.028, 16));
-  points.push(...sampleCircle({ x: -0.14, y: 0.08 }, 0.026, 14));
-  points.push(...sampleCircle({ x: -0.18, y: -0.1 }, 0.02, 10));
-  points.push(...sampleCircle({ x: 0.19, y: -0.11 }, 0.02, 10));
-  points.push(...sampleCircle({ x: -0.19, y: 0.13 }, 0.019, 10));
-  points.push(...sampleCircle({ x: 0.25, y: 0.13 }, 0.019, 10));
-  points.push(...sampleCircle({ x: 0.11, y: -0.2 }, 0.017, 8));
-
+const createEyePoints = (): Point[] => {
+  const points: Point[] = [];
+  // Contorno del ojo
+  points.push(...sampleLine({ x: -0.32, y: 0 }, { x: -0.16, y: -0.12 }, 30));
+  points.push(...sampleLine({ x: -0.16, y: -0.12 }, { x: 0.16, y: -0.12 }, 34));
+  points.push(...sampleLine({ x: 0.16, y: -0.12 }, { x: 0.32, y: 0 }, 30));
+  points.push(...sampleLine({ x: 0.32, y: 0 }, { x: 0.16, y: 0.12 }, 30));
+  points.push(...sampleLine({ x: 0.16, y: 0.12 }, { x: -0.16, y: 0.12 }, 34));
+  points.push(...sampleLine({ x: -0.16, y: 0.12 }, { x: -0.32, y: 0 }, 30));
+  // Pupila
+  points.push(...sampleCircle({ x: 0, y: 0 }, 0.08, 32));
+  points.push(...sampleCircle({ x: 0, y: 0 }, 0.045, 18));
   return points;
 };
 
 const INTRO_POINT_COUNT = 220;
-const LOGO_POINTS: Point[] = createTreeLogoPoints();
+const LOGO_POINTS: Point[] = createEyePoints();
 const BULL_NODES = [
   { x: 0.18, y: 0.45 },
   { x: 0.26, y: 0.34 },
@@ -340,6 +322,9 @@ function HomeContent() {
 
       const drift = stage === 'logo' ? 0 : stage === 'cow' ? easeInOut(stageProgress) : 1;
       const burst = stage === 'reveal' ? easeInOut(stageProgress) : 0;
+       // Parpadeo suave del ojo en la fase inicial.
+      const blinkPhase = stage === 'logo' ? Math.sin((elapsed / LOGO_STAGE_END) * Math.PI) : 0;
+      const blinkScale = stage === 'logo' ? 0.55 + 0.45 * Math.abs(Math.cos(blinkPhase * 0.7)) : 1;
       const bullVisibility =
         stage === 'logo'
           ? 0
@@ -406,7 +391,7 @@ function HomeContent() {
       for (let i = 0; i < INTRO_POINT_COUNT; i += 1) {
         const lp = LOGO_POINTS[i % LOGO_POINTS.length];
         let px = lp.x;
-        let py = lp.y;
+        let py = lp.y * blinkScale;
 
         if (drift > 0) {
           const a = (Math.PI * 2 * i) / INTRO_POINT_COUNT + drift * 5;
@@ -991,11 +976,11 @@ function HomeContent() {
             </div>
           </div>
 
-          <h1 className="hero-text hero-stagger-item text-white mb-6 sm:mb-8 max-w-5xl mx-auto [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]" style={{ animationDelay: '220ms' }} role="heading" aria-level={1}>
+          <h1 className="hero-text hero-stagger-item slide-from-left text-white mb-6 sm:mb-8 max-w-5xl mx-auto [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]" style={{ animationDelay: '220ms' }} role="heading" aria-level={1}>
             {currentHeroSlide.title}
           </h1>
 
-          <p className="hero-subtext hero-stagger-item text-white/90 max-w-4xl mx-auto mb-8 sm:mb-12 font-light [text-shadow:0_2px_16px_rgba(0,0,0,0.35)]" style={{ animationDelay: '320ms' }}>
+          <p className="hero-subtext hero-stagger-item scroll-anim slide-from-right text-white/90 max-w-4xl mx-auto mb-8 sm:mb-12 font-light [text-shadow:0_2px_16px_rgba(0,0,0,0.35)]" style={{ animationDelay: '320ms' }}>
             {currentHeroSlide.description}
           </p>
 

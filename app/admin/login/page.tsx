@@ -78,7 +78,7 @@ function LoginContent() {
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
-                  Contraseña
+                  contraseña
                 </label>
                 <input
                   type="password"
@@ -106,7 +106,7 @@ function LoginContent() {
             </form>
 
             <p className="text-center text-xs text-muted-foreground mt-6">
-              © 2026 Rockink IMM - Panel de Administración
+              Â© 2026 Rockink IMM - Panel de AdministraciÃ³n
             </p>
           </CardContent>
         </Card>

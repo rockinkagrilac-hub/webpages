@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useDeferredValue } from 'react';
 import { Header } from '@/components/header';
 import { ProductCard } from '@/components/product-card';
 import { Button } from '@/components/ui/button';
@@ -71,18 +71,21 @@ function StoreContent() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products', { cache: 'no-store' });
+        const response = await fetch('/api/products', { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error('Error API');
         const data = (await response.json()) as Product[];
         setAllProducts(data);
-      } catch {
+      } catch (err) {
+        if (controller.signal.aborted) return;
         setAllProducts(PRODUCTS);
       }
     };
 
     void loadProducts();
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -103,13 +106,16 @@ function StoreContent() {
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
+  const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
+  const deferredTreeSearch = useDeferredValue(treeSearchTerm.trim().toLowerCase());
+
   const categories = useMemo(
     () => mergeCategoriesWithProducts(allProducts.map((p) => p.category), storedCategories),
     [allProducts, storedCategories]
   );
 
   const filteredProducts = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
+    const q = deferredSearch;
     const treeQ = selectedTreeFilters.map((v) => v.toLowerCase());
     const base = allProducts.filter((p) => {
       const text = `${p.name} ${p.description} ${p.category}`.toLowerCase();
@@ -127,7 +133,7 @@ function StoreContent() {
     if (sortBy === 'name_asc') return [...base].sort((a, b) => a.name.localeCompare(b.name, 'es'));
     if (sortBy === 'name_desc') return [...base].sort((a, b) => b.name.localeCompare(a.name, 'es'));
     return base;
-  }, [allProducts, isPajillasView, selectedCategory, selectedBrand, onlyOffers, searchTerm, sortBy]);
+  }, [allProducts, isPajillasView, selectedCategory, selectedBrand, onlyOffers, deferredSearch, sortBy, selectedTreeFilters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
   const paginatedProducts = useMemo(() => {
@@ -135,19 +141,22 @@ function StoreContent() {
     return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
   }, [filteredProducts, currentPage]);
 
+  const categoryPreviewMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of allProducts) {
+      if (map.has(p.category)) continue;
+      if (p.image) map.set(p.category, p.image);
+    }
+    return map;
+  }, [allProducts]);
+
   const categoryPreviews = useMemo(
     () =>
-      categories.map((category) => {
-        const sample =
-          allProducts.find((p) => p.category === category && p.image) ||
-          allProducts.find((p) => p.category === category) ||
-          null;
-        return {
-          category,
-          image: sample?.image || '/placeholder.svg',
-        };
-      }),
-    [categories, allProducts]
+      categories.map((category) => ({
+        category,
+        image: categoryPreviewMap.get(category) || '/placeholder.svg',
+      })),
+    [categories, categoryPreviewMap]
   );
 
   const handleAddedToCart = (product: Product) => {
@@ -169,13 +178,13 @@ function StoreContent() {
     selectedTreeFilters.length;
   const quickCategories = categories.slice(0, 6);
   const filteredTree = useMemo(() => {
-    const q = treeSearchTerm.trim().toLowerCase();
+    const q = deferredTreeSearch;
     if (!q) return CATEGORY_TREE;
     return CATEGORY_TREE.filter((item) => {
       if (item.label.toLowerCase().includes(q)) return true;
       return item.children?.some((child) => child.toLowerCase().includes(q));
     });
-  }, [treeSearchTerm]);
+  }, [deferredTreeSearch]);
 
   const paginationItems = useMemo(() => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -245,7 +254,7 @@ function StoreContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, selectedBrand, isPajillasView, onlyOffers, sortBy, searchTerm, treeSearchTerm, selectedTreeFilters.length]);
+  }, [selectedCategory, selectedBrand, isPajillasView, onlyOffers, sortBy, deferredSearch, deferredTreeSearch, selectedTreeFilters]);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -527,6 +536,7 @@ function StoreContent() {
                     src={item.image}
                     alt={item.category}
                     fill
+                    loading="lazy"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
@@ -673,6 +683,7 @@ function StoreContent() {
                       src={img || '/placeholder.svg'}
                       alt={`${quickViewProduct.name} ${idx + 1}`}
                       fill
+                      loading="lazy"
                       className="object-cover"
                     />
                   </div>

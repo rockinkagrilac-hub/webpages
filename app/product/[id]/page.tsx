@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { ArrowLeft, ShoppingCart, Check, Download, MessageCircle } from 'lucide-
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
-import { createElement, use, useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 
 type DetailTab = 'description' | 'specs' | 'video' | 'model3d';
 
@@ -405,8 +405,8 @@ function ProductDetailContent({ productId }: { productId: string }) {
   );
 }
 
-export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ProductDetail({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   return (
     <CartProvider>

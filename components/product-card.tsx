@@ -70,6 +70,7 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
           src={images[currentImageIndex] || '/placeholder.svg'}
           alt={product.name}
           fill
+          loading="lazy"
           onLoad={() => setImageLoaded(true)}
           className={`magnetic-image moving-product-image object-cover transition-transform duration-500 ${imageLoaded ? 'is-loaded' : ''}`}
         />
