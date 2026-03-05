@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from "next/link"
 import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
@@ -116,6 +116,7 @@ function HomeContent() {
   const scrollRafRef = useRef<number>(0);
   const pendingScrollYRef = useRef(0);
   const [brandsCascadeActive, setBrandsCascadeActive] = useState(false);
+  const scrollDirectionRef = useRef<'up' | 'down'>('down');
 
   const loadHomepageData = async () => {
     try {
@@ -145,7 +146,7 @@ function HomeContent() {
   useEffect(() => {
     void loadHomepageData();
 
-    // Sincronizar cambios hechos en otras pestaÃ±as/ventanas y al volver a foco
+    // Sincronizar cambios hechos en otras pestaÃƒÂ±as/ventanas y al volver a foco
     const handleStorage = () => void loadHomepageData();
     const handleFocus = () => void loadHomepageData();
     window.addEventListener('storage', handleStorage);
@@ -181,6 +182,10 @@ function HomeContent() {
       const now = performance.now();
       const y = pendingScrollYRef.current;
       const dy = y - scrollTrackerRef.current.y;
+      const direction = dy >= 0 ? 'down' : 'up';
+      if (scrollDirectionRef.current !== direction) {
+        scrollDirectionRef.current = direction;
+      }
       const dt = Math.max(16, now - scrollTrackerRef.current.t);
       const velocity = Math.min(1, Math.abs(dy / dt) * 2.2);
       setKineticBoost((prev) => (Math.abs(prev - velocity) > 0.02 ? velocity : prev));
@@ -281,12 +286,12 @@ function HomeContent() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    const start = performance.now();
+    let start = performance.now();
     let raf = 0;
     let lastStage: IntroStage = 'logo';
 
     const draw = (now: number) => {
-      const elapsed = now - start;
+      const elapsed = (now - start) % cycleDuration;
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
       const cx = width / 2;
@@ -421,26 +426,11 @@ function HomeContent() {
       const hudX = cx - hudW / 2;
       const hudY = Math.max(24, height * 0.82);
       const totalProgress = Math.max(0, Math.min(1, elapsed / TOTAL_INTRO_DURATION));
-      ctx.save();
-      ctx.globalAlpha = 0.75;
-      ctx.fillStyle = 'rgba(2,6,23,0.62)';
-      ctx.fillRect(hudX, hudY, hudW, 6);
-      ctx.fillStyle = 'rgba(74,222,128,0.92)';
-      ctx.fillRect(hudX, hudY, hudW * totalProgress, 6);
-      ctx.restore();
+      const isExit = elapsed >= TOTAL_INTRO_DURATION - 600;
+      if (introExiting !== isExit) setIntroExiting(isExit);
 
-      if (elapsed < TOTAL_INTRO_DURATION) {
-        raf = window.requestAnimationFrame(draw);
-      } else {
-        if (!introExitScheduledRef.current) {
-          introExitScheduledRef.current = true;
-          setIntroExiting(true);
-          window.setTimeout(() => {
-            setIntroVisible(false);
-          }, 2000);
-        }
-      }
-    };
+      raf = window.requestAnimationFrame(draw);
+    }
 
     setIntroExiting(false);
     introExitScheduledRef.current = false;
@@ -522,14 +512,34 @@ function HomeContent() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          const el = entry.target as HTMLElement;
+          const direction = scrollDirectionRef.current;
+          const viewport = window.innerHeight || 800;
+          const { top, bottom } = entry.boundingClientRect;
+
+          // Entrada en cualquier dirección
           if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
+            el.classList.add('is-visible');
+            el.classList.remove('is-exit');
             playTechSound('section');
-            observer.unobserve(entry.target);
+            return;
+          }
+
+          // Despedida al desplazarse hacia arriba: el bloque se va por la parte inferior
+          if (direction === 'up' && top > viewport * 0.6) {
+            el.classList.add('is-exit');
+            el.classList.remove('is-visible');
+            return;
+          }
+
+          // Rearme cuando bajamos y el bloque quedó arriba fuera de la vista
+          if (direction === 'down' && bottom < viewport * 0.1) {
+            el.classList.remove('is-visible');
+            el.classList.remove('is-exit');
           }
         });
       },
-      { threshold: 0.16, rootMargin: '0px 0px -8% 0px' }
+      { threshold: 0.22, rootMargin: '-12% 0px -12% 0px' }
     );
 
     revealElements.forEach((element) => observer.observe(element));
@@ -578,7 +588,7 @@ function HomeContent() {
 
     let hasRun = false;
     const animateValue = (key: 'products' | 'clients' | 'service', target: number, duration: number) => {
-      const start = performance.now();
+      let start = performance.now();
       const step = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
         const eased = 1 - Math.pow(1 - t, 3);
@@ -1288,7 +1298,7 @@ function HomeContent() {
           </div>
 
           <div className="border-t border-gray-700 pt-8 text-center">
-            <p className="text-gray-400 text-sm">© 2026 Rockink IMM. Todos los derechos reservados.</p>
+            <p className="text-gray-400 text-sm">Â© 2026 Rockink IMM. Todos los derechos reservados.</p>
             <p className="text-gray-500 text-xs mt-2">Transformando la ingenieria ganadera con innovacion y calidad</p>
           </div>
         </div>

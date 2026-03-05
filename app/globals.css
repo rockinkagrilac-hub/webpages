@@ -342,6 +342,18 @@
   transform: translateY(0);
 }
 
+.reveal-block.is-exit {
+  opacity: 0;
+  transform: translateY(-18px) scale(0.98) skewY(-0.6deg);
+  filter: blur(1px);
+  transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
+}
+
+.reveal-block.is-visible.reveal-block.is-exit {
+  /* Asegura la transición suave cuando se alternan rápido las clases */
+  transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease;
+}
+
 .tilt-card {
   --tilt-x: 0deg;
   --tilt-y: 0deg;
