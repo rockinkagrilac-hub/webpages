@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 
 const ADMIN_COOKIE = 'admin_access_ok'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone()
   const { pathname } = url
   const isAdminPage = pathname.startsWith('/admin')
