@@ -287,6 +287,7 @@ function HomeContent() {
     window.addEventListener('resize', resizeCanvas);
 
     let start = performance.now();
+    const cycleDuration = TOTAL_INTRO_DURATION;
     let raf = 0;
     let lastStage: IntroStage = 'logo';
 
