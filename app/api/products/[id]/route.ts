@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { getProductById, updateProduct, deleteProduct } from '@/lib/products-repo'
 import { Product } from '@/lib/data'
 
@@ -11,11 +11,12 @@ function isAuthorized(request: Request) {
 }
 
 export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const product = await getProductById(params.id)
+    const { id } = await params
+    const product = await getProductById(id)
     if (!product) {
       return NextResponse.json({ message: 'Producto no encontrado' }, { status: 404 })
     }
@@ -26,16 +27,17 @@ export async function GET(
 }
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     const patch = (await request.json()) as Partial<Product>
-    const updated = await updateProduct(params.id, patch)
+    const updated = await updateProduct(id, patch)
     if (!updated) {
       return NextResponse.json({ message: 'Producto no encontrado' }, { status: 404 })
     }
@@ -46,15 +48,16 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const ok = await deleteProduct(params.id)
+    const { id } = await params
+    const ok = await deleteProduct(id)
     if (!ok) {
       return NextResponse.json({ message: 'Producto no encontrado' }, { status: 404 })
     }
