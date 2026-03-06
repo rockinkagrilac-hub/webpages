@@ -179,9 +179,11 @@ function AboutContent() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="metadata"
             aria-hidden="true"
+            poster="/hero-agro.jpg"
           >
+            <source src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 991px)" />
             <source src="/videodefondosobrenosotros.mp4" type="video/mp4" />
           </video>
         </div>
