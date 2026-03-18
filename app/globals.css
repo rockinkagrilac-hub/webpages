@@ -272,6 +272,13 @@
   text-wrap: pretty;
 }
 
+.hero-copy {
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
 .slide-from-left {
   opacity: 0;
   transform: translateX(-28px);

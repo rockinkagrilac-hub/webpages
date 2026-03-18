@@ -8,8 +8,8 @@ import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { PRODUCTS, Product, Brand, DEFAULT_BRANDS, HeroSlide, DEFAULT_HERO_SLIDES } from '@/lib/data';
-import { Edit2, Trash2, Plus, Check, Award, Image as ImageIcon } from 'lucide-react';
+import { PRODUCTS, Product, Brand, DEFAULT_BRANDS } from '@/lib/data';
+import { Edit2, Trash2, Plus, Check, Award } from 'lucide-react';
 import Image from 'next/image';
 import { ImageUploader } from '@/components/image-uploader';
 
@@ -24,14 +24,12 @@ function AdminDashboardContent() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({});
   const [redirected, setRedirected] = useState(false);
-  const [activeTab, setActiveTab] = useState<'productos' | 'hero' | 'ofertas' | 'marcas'>('productos');
+  const [activeTab, setActiveTab] = useState<'productos' | 'ofertas' | 'marcas'>('productos');
   const [selectedOffersProducts, setSelectedOffersProducts] = useState<string[]>([]);
   const [brands, setBrands] = useState<Brand[]>(DEFAULT_BRANDS);
   const [newBrandName, setNewBrandName] = useState('');
   const [newBrandLogo, setNewBrandLogo] = useState('');
   const [productImages, setProductImages] = useState<string[]>([]);
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
-  const [heroUploadImages, setHeroUploadImages] = useState<string[]>([]);
 
   const getApiErrorMessage = async (response: Response, fallback: string) => {
     try {
@@ -60,27 +58,19 @@ function AdminDashboardContent() {
       const data = (await response.json()) as {
         offersProducts?: string[];
         brands?: Brand[];
-        heroSlides?: HeroSlide[];
       };
 
       setSelectedOffersProducts(Array.isArray(data.offersProducts) ? data.offersProducts : []);
       setBrands(Array.isArray(data.brands) && data.brands.length > 0 ? data.brands : DEFAULT_BRANDS);
-      setHeroSlides(
-        Array.isArray(data.heroSlides) && data.heroSlides.length > 0
-          ? data.heroSlides
-          : DEFAULT_HERO_SLIDES
-      );
     } catch {
       setSelectedOffersProducts([]);
       setBrands(DEFAULT_BRANDS);
-      setHeroSlides(DEFAULT_HERO_SLIDES);
     }
   };
 
   const saveSiteConfig = async (patch: {
     offersProducts?: string[];
     brands?: Brand[];
-    heroSlides?: HeroSlide[];
   }) => {
     const response = await fetch('/api/site-config', {
       method: 'PUT',
@@ -94,11 +84,9 @@ function AdminDashboardContent() {
     const data = (await response.json()) as {
       offersProducts: string[];
       brands: Brand[];
-      heroSlides: HeroSlide[];
     };
     setSelectedOffersProducts(data.offersProducts);
     setBrands(data.brands);
-    setHeroSlides(data.heroSlides);
     return true;
   };
 
@@ -264,77 +252,6 @@ function AdminDashboardContent() {
     }
   };
 
-  const saveHeroSlides = async (updatedSlides: HeroSlide[]) => {
-    const ok = await saveSiteConfig({ heroSlides: updatedSlides });
-    if (!ok) {
-      alert('No se pudieron guardar los slides del hero. Prueba con imágenes más livianas.');
-    }
-  };
-
-  const handleAddHeroSlidesFromUpload = async () => {
-    if (heroUploadImages.length === 0) {
-      alert('Selecciona al menos una imagen');
-      return;
-    }
-
-    const newSlides = heroUploadImages.map((url, idx) => ({
-      id: `${Date.now()}-${idx}`,
-      url,
-      badge: 'Bienvenido a Rockink IMM',
-      title: 'Ofertas Especiales Ahora',
-      description: 'Descubre nuestros productos en oferta seleccionados especialmente para ti. Calidad premium a precios excepcionales.',
-    }));
-
-    const updated = [...heroSlides, ...newSlides].slice(0, 5);
-    await saveHeroSlides(updated);
-    setHeroUploadImages([]);
-    alert('Slides del hero actualizados');
-  };
-
-  const handleCreateHeroSlide = async () => {
-    if (heroSlides.length >= 5) {
-      alert('Máximo 5 slides');
-      return;
-    }
-
-    const newSlide: HeroSlide = {
-      id: `${Date.now()}-new`,
-      url: '/placeholder.jpg',
-      badge: 'Nueva etiqueta',
-      title: 'Nuevo título',
-      description: 'Nueva descripción',
-    };
-
-    await saveHeroSlides([...heroSlides, newSlide]);
-  };
-
-  const handleDeleteHeroSlide = async (id: string) => {
-    if (heroSlides.length <= 1) {
-      alert('Debe existir al menos un slide en el hero');
-      return;
-    }
-    const updated = heroSlides.filter((slide) => slide.id !== id);
-    await saveHeroSlides(updated);
-  };
-
-  const handleUpdateHeroSlide = async (id: string, field: 'badge' | 'title' | 'description' | 'url', value: string) => {
-    const updated = heroSlides.map((slide) => (slide.id === id ? { ...slide, [field]: value } : slide));
-    await saveHeroSlides(updated);
-  };
-
-  const handleUpdateHeroSlideImageFile = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      handleUpdateHeroSlide(id, 'url', base64);
-    };
-    reader.readAsDataURL(file);
-    e.currentTarget.value = '';
-  };
-
   if (!isLoggedIn) return null;
 
   return (
@@ -350,14 +267,6 @@ function AdminDashboardContent() {
             className="rounded-b-none"
           >
             Productos
-          </Button>
-          <Button
-            variant={activeTab === 'hero' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('hero')}
-            className="rounded-b-none"
-          >
-            <ImageIcon className="w-4 h-4 mr-2" />
-            Hero
           </Button>
           <Button
             variant={activeTab === 'ofertas' ? 'default' : 'ghost'}
@@ -620,122 +529,6 @@ function AdminDashboardContent() {
         )}
 
 
-        {/* Tab: Hero */}
-        {activeTab === 'hero' && (
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-primary">Gestión de Hero Principal</h1>
-            <p className="text-muted-foreground">
-              Administra imágenes de fondo y frases del carrusel principal (máximo 5).
-            </p>
-
-            <div className="flex justify-end">
-              <Button
-                onClick={handleCreateHeroSlide}
-                disabled={heroSlides.length >= 5}
-                className="bg-secondary hover:bg-secondary/90"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Crear Nuevo Slide
-              </Button>
-            </div>
-
-            <Card className="border-2 border-primary">
-              <CardContent className="pt-6">
-                <ImageUploader
-                  images={heroUploadImages}
-                  onImagesChange={setHeroUploadImages}
-                  maxImages={5}
-                />
-                <Button
-                  onClick={handleAddHeroSlidesFromUpload}
-                  disabled={heroUploadImages.length === 0}
-                  className="w-full mt-4 bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Imágenes al Hero
-                </Button>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4">
-              {heroSlides.map((slide) => (
-                <Card key={slide.id}>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="relative w-full h-44 bg-muted rounded">
-                      <Image
-                        src={slide.url}
-                        alt={slide.title}
-                        fill
-                        className="object-cover rounded"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">URL de imagen</label>
-                      <input
-                        type="text"
-                        value={slide.url}
-                        onChange={(e) => handleUpdateHeroSlide(slide.id, 'url', e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">O subir imagen para este slide</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleUpdateHeroSlideImageFile(slide.id, e)}
-                        className="w-full px-3 py-2 border border-input rounded bg-background"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Etiqueta</label>
-                      <input
-                        type="text"
-                        value={slide.badge}
-                        onChange={(e) => handleUpdateHeroSlide(slide.id, 'badge', e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Título</label>
-                      <input
-                        type="text"
-                        value={slide.title}
-                        onChange={(e) => handleUpdateHeroSlide(slide.id, 'title', e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold mb-2">Descripción</label>
-                      <textarea
-                        value={slide.description}
-                        onChange={(e) => handleUpdateHeroSlide(slide.id, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleDeleteHeroSlide(slide.id)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Eliminar Slide
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Tab: Gestionar Ofertas */}
         {activeTab === 'ofertas' && (
           <div className="space-y-6">
@@ -885,6 +678,7 @@ export default function AdminPage() {
     </AuthProvider>
   );
 }
+
 
 
 

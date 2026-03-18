@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent } from 'react';
+import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Mail, MapPin, MessageCircle, Phone, ShieldCheck, Sparkles } from 'lucide-react';
@@ -26,8 +26,8 @@ const channels = [
   },
   {
     title: 'Cobertura',
-    value: 'Arequipa, Peru',
-    href: 'https://maps.google.com/?q=Arequipa,Peru',
+    value: 'Todo el Peru · Av. Lambramani E-17, Urb. Mariano Bustamante, Mariano Melgar 04000',
+    href: 'https://maps.google.com/?q=Av.%20Lambramani%20E-17,%20Urb.%20Mariano%20Bustamante,%20Mariano%20Melgar%2004000',
     icon: MapPin,
   },
 ];
@@ -60,6 +60,7 @@ const socialLinks = [
 ];
 
 export function ContactSection() {
+  const [mapFocus, setMapFocus] = useState<'peru' | 'arequipa'>('peru');
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -102,7 +103,7 @@ export function ContactSection() {
             Centro de contacto Rockink IMM
           </div>
 
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 items-end">
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-8 items-start">
             <div>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight">
                 Contacto directo para una operacion <span className="gradient-text">mas agil</span>
@@ -129,7 +130,7 @@ export function ContactSection() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {channels.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -138,7 +139,7 @@ export function ContactSection() {
                     href={item.href}
                     target={item.href.startsWith('http') ? '_blank' : undefined}
                     rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
-                    className="rounded-2xl border border-border bg-background/85 backdrop-blur-sm p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                    className="rounded-2xl border border-border bg-background/90 backdrop-blur-sm p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                   >
                     <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                       <Icon className="w-5 h-5" />
@@ -150,6 +151,56 @@ export function ContactSection() {
                   </a>
                 );
               })}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-border bg-background/90 backdrop-blur-sm p-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Cobertura y ubicacion</p>
+                  <p className="text-sm font-semibold text-foreground">Todo el Peru · Arequipa</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Av. Lambramani E-17, Urb. Mariano Bustamante, Mariano Melgar 04000
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMapFocus('peru')}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
+                      mapFocus === 'peru'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Todo el Peru
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapFocus('arequipa')}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
+                      mapFocus === 'arequipa'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Arequipa
+                  </button>
+                </div>
+              </div>
+
+              <div className="aspect-[16/10] w-full overflow-hidden rounded-xl border border-border">
+                <iframe
+                  title="Mapa Rockink IMM"
+                  src={
+                    mapFocus === 'peru'
+                      ? 'https://maps.google.com/?q=Peru&z=5&output=embed'
+                      : 'https://maps.google.com/?q=Av.%20Lambramani%20E-17,%20Urb.%20Mariano%20Bustamante,%20Mariano%20Melgar%2004000&z=16&output=embed'
+                  }
+                  className="h-full w-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -319,10 +370,10 @@ export function ContactSection() {
           <div className="rounded-2xl bg-background border border-border p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-foreground mb-3">Legal</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li id="privacidad" className="scroll-mt-28">Politicas de Privacidad</li>
-              <li id="terminos" className="scroll-mt-28">Terminos</li>
-              <li>Libro de Reclamaciones</li>
-              <li id="cookies" className="scroll-mt-28">Politicas de Cookies</li>
+              <li><Link href="/privacidad" className="hover:text-primary transition-colors">Politicas de Privacidad</Link></li>
+              <li><Link href="/terminos" className="hover:text-primary transition-colors">Terminos</Link></li>
+              <li><span>Libro de Reclamaciones</span></li>
+              <li><Link href="/cookies" className="hover:text-primary transition-colors">Politicas de Cookies</Link></li>
             </ul>
           </div>
         </div>
@@ -362,9 +413,9 @@ export function ContactSection() {
             <div>
               <h4 className="font-semibold mb-4 text-white">Legal</h4>
               <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/contacto#privacidad" className="hover:text-primary transition">Privacidad</a></li>
-                <li><a href="/contacto#terminos" className="hover:text-primary transition">Terminos</a></li>
-                <li><a href="/contacto#cookies" className="hover:text-primary transition">Cookies</a></li>
+                <li><a href="/privacidad" className="hover:text-primary transition">Privacidad</a></li>
+                <li><a href="/terminos" className="hover:text-primary transition">Terminos</a></li>
+                <li><a href="/cookies" className="hover:text-primary transition">Cookies</a></li>
               </ul>
             </div>
 

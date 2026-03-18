@@ -68,8 +68,38 @@ const createEyePoints = (): Point[] => {
   return points;
 };
 
-const INTRO_POINT_COUNT = 220;
-const LOGO_POINTS: Point[] = createEyePoints();
+const INTRO_POINT_COUNT = 240;
+
+const sampleRect = (center: Point, width: number, height: number, count: number): Point[] => {
+  const points: Point[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const t = i / Math.max(1, count - 1);
+    const x = center.x + (t - 0.5) * width;
+    const y = center.y + (Math.sin(t * Math.PI) - 0.5) * height;
+    points.push({ x, y });
+  }
+  return points;
+};
+
+const createTreePoints = (): Point[] => {
+  const points: Point[] = [];
+  // Emblema general: anillo + hoja central
+  points.push(...sampleCircle({ x: 0, y: -0.1 }, 0.32, 90));
+  points.push(...sampleCircle({ x: 0, y: -0.1 }, 0.22, 64));
+
+  // Hoja estilizada (izq/der)
+  points.push(...sampleLine({ x: 0, y: -0.28 }, { x: -0.12, y: -0.1 }, 22));
+  points.push(...sampleLine({ x: 0, y: -0.28 }, { x: 0.12, y: -0.1 }, 22));
+  points.push(...sampleLine({ x: -0.12, y: -0.1 }, { x: 0, y: 0.02 }, 20));
+  points.push(...sampleLine({ x: 0.12, y: -0.1 }, { x: 0, y: 0.02 }, 20));
+
+  // Semilla central
+  points.push(...sampleCircle({ x: 0, y: -0.05 }, 0.06, 24));
+
+  return points;
+};
+
+const LOGO_POINTS: Point[] = createTreePoints();
 const BULL_NODES = [
   { x: 0.18, y: 0.45 },
   { x: 0.26, y: 0.34 },
@@ -963,19 +993,19 @@ function HomeContent() {
 
         <div
           data-parallax-depth="12"
-          className="parallax-layer max-w-6xl mx-auto relative z-10 text-center px-4 py-8 sm:px-6 sm:py-10 md:px-10 md:py-14 hero-stagger"
+          className="parallax-layer max-w-6xl mx-auto relative z-10 text-center px-4 py-8 sm:px-6 sm:py-10 md:px-10 md:py-14 hero-stagger hero-copy"
         >
           <div className="mb-6 sm:mb-8 inline-block hero-stagger-item" style={{ animationDelay: '120ms' }}>
             <div className="px-4 py-2 sm:px-6 sm:py-3 bg-white/10 border border-white/20 rounded-full">
-              <span className="text-white font-semibold text-sm">{currentHeroSlide.badge}</span>
+              <span className="text-white font-semibold text-base sm:text-lg tracking-wide">{currentHeroSlide.badge}</span>
             </div>
           </div>
 
-          <h1 className="hero-text hero-stagger-item slide-from-left text-white mb-6 sm:mb-8 max-w-5xl mx-auto [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]" style={{ animationDelay: '220ms' }} role="heading" aria-level={1}>
+          <h1 className="hero-text hero-stagger-item slide-from-left text-white mb-6 sm:mb-8 max-w-5xl mx-auto [text-shadow:0_2px_14px_rgba(0,0,0,0.38)]" style={{ animationDelay: '220ms' }} role="heading" aria-level={1}>
             {currentHeroSlide.title}
           </h1>
 
-          <p className="hero-subtext hero-stagger-item scroll-anim slide-from-right text-white/90 max-w-4xl mx-auto mb-8 sm:mb-12 font-light [text-shadow:0_2px_16px_rgba(0,0,0,0.35)]" style={{ animationDelay: '320ms' }}>
+          <p className="hero-subtext hero-stagger-item scroll-anim slide-from-right text-white/90 max-w-4xl mx-auto mb-8 sm:mb-12 font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.3)]" style={{ animationDelay: '320ms' }}>
             {currentHeroSlide.description}
           </p>
 
@@ -1035,20 +1065,6 @@ function HomeContent() {
           </div>
         </div>
 
-        {heroSlides.length > 0 && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-            {heroSlides.map((slide, idx) => (
-              <button
-                key={slide.id}
-                onClick={() => setCurrentHeroIndex(idx)}
-                className={`h-2 rounded-full transition-all ${
-                  idx === currentHeroIndex ? 'bg-primary w-8' : 'bg-white/50 w-2 hover:bg-white/75'
-                }`}
-                aria-label={`Ir al slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
       </section>
 
       {/* Brands Section */}
@@ -1245,9 +1261,9 @@ function HomeContent() {
             <div>
               <h4 className="font-semibold mb-4 text-white">Legal</h4>
               <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/contacto#privacidad" className="hover:text-primary transition">Privacidad</a></li>
-                <li><a href="/contacto#terminos" className="hover:text-primary transition">Terminos</a></li>
-                <li><a href="/contacto#cookies" className="hover:text-primary transition">Cookies</a></li>
+                <li><a href="/privacidad" className="hover:text-primary transition">Privacidad</a></li>
+                <li><a href="/terminos" className="hover:text-primary transition">Terminos</a></li>
+                <li><a href="/cookies" className="hover:text-primary transition">Cookies</a></li>
               </ul>
             </div>
 

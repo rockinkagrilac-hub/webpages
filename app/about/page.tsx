@@ -386,9 +386,9 @@ function AboutContent() {
             <div>
               <h4 className="font-semibold mb-4 text-white">Legal</h4>
               <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/contacto#privacidad" className="hover:text-primary transition">Privacidad</a></li>
-                <li><a href="/contacto#terminos" className="hover:text-primary transition">Terminos</a></li>
-                <li><a href="/contacto#cookies" className="hover:text-primary transition">Cookies</a></li>
+                <li><a href="/privacidad" className="hover:text-primary transition">Privacidad</a></li>
+                <li><a href="/terminos" className="hover:text-primary transition">Terminos</a></li>
+                <li><a href="/cookies" className="hover:text-primary transition">Cookies</a></li>
               </ul>
             </div>
 

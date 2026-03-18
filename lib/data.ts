@@ -41,7 +41,29 @@ export const DEFAULT_BRANDS: Brand[] = [
   { id: '4', name: 'Sunway', logo: 'https://images.unsplash.com/photo-1560264357-8d9766985b90?w=300&h=140&fit=crop' },
 ];
 
-export const DEFAULT_HERO_SLIDES: HeroSlide[] = [];
+export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
+  {
+    id: 'hero-1',
+    url: '/1.png',
+    badge: 'Rockink IMM',
+    title: 'Innovacion que impulsa tu ganaderia',
+    description: 'Tecnologia inteligente para el campo moderno.',
+  },
+  {
+    id: 'hero-2',
+    url: '/2.png',
+    badge: 'Ganaderia de precision',
+    title: 'Resultados reales',
+    description: 'Transformamos datos en productividad ganadera.',
+  },
+  {
+    id: 'hero-3',
+    url: '/3.png',
+    badge: 'Del campo a la nube',
+    title: 'Control total desde cualquier lugar',
+    description: 'Datos, control y productividad en una sola plataforma.',
+  },
+];
 
 export const PHONE_NUMBERS = {
   tier1: '+51 962838329',

@@ -149,6 +149,7 @@ function StoreContent() {
     (searchTerm.trim() ? 1 : 0) +
     selectedTreeFilters.length;
   const quickCategories = categories.slice(0, 6);
+  const hasCategories = categories.length > 0;
   const filteredTree = useMemo(() => {
     const q = deferredTreeSearch;
     if (!q) return CATEGORY_TREE;
@@ -285,10 +286,12 @@ function StoreContent() {
               <p className="text-xs text-muted-foreground">Productos</p>
               <p className="text-xl font-bold text-foreground">{allProducts.length}</p>
             </div>
-            <div className="rounded-xl border bg-background/80 px-4 py-3">
-              <p className="text-xs text-muted-foreground">Categorías</p>
-              <p className="text-xl font-bold text-foreground">{categories.length}</p>
-            </div>
+            {hasCategories && (
+              <div className="rounded-xl border bg-background/80 px-4 py-3">
+                <p className="text-xs text-muted-foreground">Categorías</p>
+                <p className="text-xl font-bold text-foreground">{categories.length}</p>
+              </div>
+            )}
             <div className="rounded-xl border bg-background/80 px-4 py-3">
               <p className="text-xs text-muted-foreground">Marcas</p>
               <p className="text-xl font-bold text-foreground">{availableBrands.length}</p>
@@ -452,29 +455,31 @@ function StoreContent() {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="w-full overflow-x-auto pb-1">
-                  <div className="flex flex-nowrap items-center gap-2 min-w-max">
-                    <Button
-                      variant={selectedCategory === null ? 'default' : 'outline'}
-                      onClick={() => setSelectedCategory(null)}
-                      className="rounded-full h-8 px-3 text-xs"
-                    >
-                      Todos
-                    </Button>
-                    {quickCategories.map((category) => (
+              {hasCategories && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="w-full overflow-x-auto pb-1">
+                    <div className="flex flex-nowrap items-center gap-2 min-w-max">
                       <Button
-                        key={`quick-${category}`}
-                        variant={selectedCategory === category ? 'default' : 'outline'}
-                        onClick={() => setSelectedCategory(category)}
+                        variant={selectedCategory === null ? 'default' : 'outline'}
+                        onClick={() => setSelectedCategory(null)}
                         className="rounded-full h-8 px-3 text-xs"
                       >
-                        {category}
+                        Todos
                       </Button>
-                    ))}
+                      {quickCategories.map((category) => (
+                        <Button
+                          key={`quick-${category}`}
+                          variant={selectedCategory === category ? 'default' : 'outline'}
+                          onClick={() => setSelectedCategory(category)}
+                          className="rounded-full h-8 px-3 text-xs"
+                        >
+                          {category}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <select
@@ -498,28 +503,30 @@ function StoreContent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {categoryPreviews.slice(0, 8).map((item) => (
-                <button
-                  key={`preview-${item.category}`}
-                  type="button"
-                  onClick={() => setSelectedCategory(item.category)}
-                  className="group relative h-28 sm:h-32 rounded-xl overflow-hidden border border-border/40 text-left"
-                >
-                  <Image
-                    src={item.image}
-                    alt={item.category}
-                    fill
-                    loading="lazy"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
-                  <div className="absolute inset-x-0 bottom-0 p-2">
-                    <p className="text-white text-xs sm:text-sm font-semibold line-clamp-1">{item.category}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {hasCategories && (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                {categoryPreviews.slice(0, 8).map((item) => (
+                  <button
+                    key={`preview-${item.category}`}
+                    type="button"
+                    onClick={() => setSelectedCategory(item.category)}
+                    className="group relative h-28 sm:h-32 rounded-xl overflow-hidden border border-border/40 text-left"
+                  >
+                    <Image
+                      src={item.image}
+                      alt={item.category}
+                      fill
+                      loading="lazy"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                    <div className="absolute inset-x-0 bottom-0 p-2">
+                      <p className="text-white text-xs sm:text-sm font-semibold line-clamp-1">{item.category}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="mb-2">
               <h2 className="text-2xl sm:text-4xl font-bold text-foreground mb-2">
