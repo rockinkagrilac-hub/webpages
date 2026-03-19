@@ -22,6 +22,7 @@ export interface Brand {
   id: string;
   name: string;
   logo: string;
+  url?: string;
 }
 
 export interface HeroSlide {

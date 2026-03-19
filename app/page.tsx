@@ -1076,11 +1076,13 @@ function HomeContent() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {brands.map((brand, idx) => (
-              <Link
-                key={brand.id}
-                href={`/store?brand=${encodeURIComponent(normalizeBrandName(brand.name))}`}
-                className={`interactive-tilt tilt-card brand-cascade-card brand-macro-card bg-white rounded-lg p-8 flex items-center justify-center hover:shadow-xl transition-all duration-300 border border-border/20 hover:border-primary/50 ${
+              {brands.map((brand, idx) => {
+                const brandHref =
+                  brand.url && brand.url.trim().length > 0
+                    ? brand.url
+                    : `/store?brand=${encodeURIComponent(normalizeBrandName(brand.name))}`;
+                const isExternal = brandHref.startsWith('http');
+                const cardClass = `interactive-tilt tilt-card brand-cascade-card brand-macro-card bg-white rounded-lg p-8 flex items-center justify-center hover:shadow-xl transition-all duration-300 border border-border/20 hover:border-primary/50 ${
                   brandsCascadeActive ? 'brand-cascade-active' : ''
                 } ${
                   normalizeBrandName(brand.name).toLowerCase().includes('lister')
@@ -1092,25 +1094,50 @@ function HomeContent() {
                     : normalizeBrandName(brand.name).toLowerCase().includes('sunway')
                     ? 'brand-variant-sunway'
                     : 'brand-variant-default'
-                }`}
-                style={
-                  {
-                    '--brand-index': idx,
-                  } as CSSProperties
-                }
-                onMouseMove={handleBrandCardMove}
-                onMouseLeave={handleBrandCardLeave}
-              >
-                <div className="brand-liquid-bg" />
-                <div className="brand-neon-border" />
-                <div className="brand-energy-ring" />
-                <div className="brand-logo-wrap relative w-full h-24 flex flex-col items-center justify-center gap-2">
-                  <img src={brand.logo || "/placeholder.svg"} alt={brand.name} className="brand-logo brand-logo-inner max-w-full max-h-full object-contain" />
-                  <span className="text-xs font-semibold text-muted-foreground">{normalizeBrandName(brand.name)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+                }`
+                const cardStyle = {
+                  '--brand-index': idx,
+                } as CSSProperties
+
+                const cardContent = (
+                  <>
+                    <div className="brand-liquid-bg" />
+                    <div className="brand-neon-border" />
+                    <div className="brand-energy-ring" />
+                    <div className="brand-logo-wrap relative w-full h-24 flex flex-col items-center justify-center gap-2">
+                      <img src={brand.logo || "/placeholder.svg"} alt={brand.name} className="brand-logo brand-logo-inner max-w-full max-h-full object-contain" />
+                      <span className="text-xs font-semibold text-muted-foreground">{normalizeBrandName(brand.name)}</span>
+                    </div>
+                  </>
+                );
+
+                return isExternal ? (
+                  <a
+                    key={brand.id}
+                    href={brandHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cardClass}
+                    style={cardStyle}
+                    onMouseMove={handleBrandCardMove}
+                    onMouseLeave={handleBrandCardLeave}
+                  >
+                    {cardContent}
+                  </a>
+                ) : (
+                  <Link
+                    key={brand.id}
+                    href={brandHref}
+                    className={cardClass}
+                    style={cardStyle}
+                    onMouseMove={handleBrandCardMove}
+                    onMouseLeave={handleBrandCardLeave}
+                  >
+                    {cardContent}
+                  </Link>
+                );
+              })}
+            </div>
         </div>
       </section>
 

@@ -29,6 +29,7 @@ function AdminDashboardContent() {
   const [brands, setBrands] = useState<Brand[]>(DEFAULT_BRANDS);
   const [newBrandName, setNewBrandName] = useState('');
   const [newBrandLogo, setNewBrandLogo] = useState('');
+  const [newBrandUrl, setNewBrandUrl] = useState('');
   const [productImages, setProductImages] = useState<string[]>([]);
 
   const getApiErrorMessage = async (response: Response, fallback: string) => {
@@ -235,6 +236,7 @@ function AdminDashboardContent() {
       id: Date.now().toString(),
       name: newBrandName,
       logo: newBrandLogo,
+      url: newBrandUrl.trim() ? newBrandUrl.trim() : undefined,
     };
 
     const updatedBrands = [...brands, newBrand];
@@ -242,6 +244,7 @@ function AdminDashboardContent() {
     if (!ok) return;
     setNewBrandName('');
     setNewBrandLogo('');
+    setNewBrandUrl('');
     alert('Marca agregada exitosamente');
   };
 
@@ -623,6 +626,16 @@ function AdminDashboardContent() {
                       onChange={(e) => setNewBrandLogo(e.target.value)}
                       className="w-full px-3 py-2 border border-input rounded"
                       placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Link de la Marca (opcional)</label>
+                    <input
+                      type="text"
+                      value={newBrandUrl}
+                      onChange={(e) => setNewBrandUrl(e.target.value)}
+                      className="w-full px-3 py-2 border border-input rounded"
+                      placeholder="https://www.marca.com"
                     />
                   </div>
                   <Button onClick={handleAddBrand} className="w-full bg-primary hover:bg-primary/90">
