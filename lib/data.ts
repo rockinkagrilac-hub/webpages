@@ -3,6 +3,7 @@
   name: string;
   description: string;
   category: string;
+  brand?: string;
   images: string[];
   image: string;
   model3dEmbedUrl?: string;

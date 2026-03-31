@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSiteConfig, updateSiteConfig } from '@/lib/site-config-repo'
 import { SiteConfig } from '@/lib/site-config-db'
+import { isAuthorized } from '@/lib/admin-auth'
+import { siteConfigSchema } from '@/lib/validators'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-const ADMIN_COOKIE = 'admin_access_ok'
 
 function jsonNoStore(data: unknown, init?: ResponseInit) {
   return NextResponse.json(data, {
@@ -18,14 +18,6 @@ function jsonNoStore(data: unknown, init?: ResponseInit) {
       ...(init?.headers || {}),
     },
   })
-}
-
-function isAuthorized(request: Request) {
-  const adminKey = process.env.ADMIN_ACCESS_KEY
-  const headerKey = request.headers.get('x-admin')
-  if (adminKey && headerKey === adminKey) return true
-  const cookieHeader = request.headers.get('cookie') || ''
-  return cookieHeader.split(/; */).some((pair) => pair.startsWith(`${ADMIN_COOKIE}=1`))
 }
 
 export async function GET() {
@@ -44,7 +36,12 @@ export async function PUT(request: Request) {
     }
 
     const patch = (await request.json()) as Partial<SiteConfig>
-    const updated = await updateSiteConfig(patch)
+    const parsed = siteConfigSchema.safeParse(patch)
+    if (!parsed.success) {
+      return jsonNoStore({ message: 'Configuracion invalida' }, { status: 400 })
+    }
+
+    const updated = await updateSiteConfig(parsed.data)
     return jsonNoStore(updated)
   } catch {
     return jsonNoStore({ message: 'Error al guardar configuracion' }, { status: 500 })

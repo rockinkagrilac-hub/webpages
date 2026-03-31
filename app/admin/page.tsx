@@ -129,6 +129,7 @@ function AdminDashboardContent() {
       name: formData.name || '',
       description: formData.description || '',
       category: formData.category || 'Otros',
+      brand: (formData as Product & { brand?: string }).brand || '',
       image: mainImage,
       model3dEmbedUrl: formData.model3dEmbedUrl || undefined,
       images: selectedImages,
@@ -339,6 +340,19 @@ function AdminDashboardContent() {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-3 py-2 border border-input rounded"
                       placeholder="Escribe la categoría"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Marca</label>
+                    <input
+                      type="text"
+                      value={(formData as Product & { brand?: string }).brand || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, brand: e.target.value } as Partial<Product>)
+                      }
+                      className="w-full px-3 py-2 border border-input rounded"
+                      placeholder="Escribe la marca"
                     />
                   </div>
 

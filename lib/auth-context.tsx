@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isMounted: boolean;
 }
@@ -13,7 +13,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const defaultValue: AuthContextType = {
   isLoggedIn: false,
-  login: () => false,
+  login: async () => false,
   logout: () => {},
   isMounted: false,
 };
@@ -21,10 +21,6 @@ const defaultValue: AuthContextType = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
-  // Credenciales fijas para demo
-  const ADMIN_USERNAME = 'admin';
-  const ADMIN_PASSWORD = 'admin';
 
   useEffect(() => {
     // Hidratar desde sessionStorage
@@ -35,20 +31,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const login = (username: string, password: string): boolean => {
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
       setIsLoggedIn(true);
       sessionStorage.setItem('adminLoggedIn', 'true');
-      document.cookie = 'admin_access_ok=1; path=/; max-age=43200; samesite=lax';
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const logout = (): void => {
     setIsLoggedIn(false);
     sessionStorage.removeItem('adminLoggedIn');
-    document.cookie = 'admin_access_ok=; path=/; max-age=0; samesite=lax';
+    void fetch('/api/admin/logout', { method: 'POST' });
   };
 
   const value: AuthContextType = {

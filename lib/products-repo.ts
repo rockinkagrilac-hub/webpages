@@ -1,68 +1,83 @@
 import { Product } from '@/lib/data';
-import { readProducts, writeProducts } from '@/lib/products-db';
+import { supabase } from '@/lib/supabase';
+
+type ProductRow = {
+  id: string;
+  descripcion: string;
+  categoria: string;
+  marca: string;
+  imagen_1: string;
+  imagen_2: string | null;
+  imagen_3: string | null;
+};
+
+const DEFAULT_YOUTUBE = 'dQw4w9WgXcQ';
+
+function mapRowToProduct(row: ProductRow): Product {
+  const images = [row.imagen_1, row.imagen_2 || '', row.imagen_3 || ''].filter(Boolean);
+  return {
+    id: row.id,
+    name: row.descripcion,
+    description: row.descripcion,
+    category: row.categoria,
+    brand: row.marca,
+    image: row.imagen_1,
+    images,
+    model3dEmbedUrl: undefined,
+    specifications: [],
+    youtubeId: DEFAULT_YOUTUBE,
+    inStock: false,
+    stockQuantity: 0,
+    inOffer: false,
+  };
+}
+
+function mapProductToRow(input: Product | Partial<Product>): Omit<ProductRow, 'id'> {
+  const images = input.images && input.images.length > 0 ? input.images : input.image ? [input.image] : [];
+  return {
+    descripcion: input.description || input.name || '',
+    categoria: input.category || '',
+    marca: input.brand || input.category || '',
+    imagen_1: images[0] || '',
+    imagen_2: images[1] || null,
+    imagen_3: images[2] || null,
+  };
+}
 
 export async function getProducts(): Promise<Product[]> {
-  return readProducts();
+  const { data, error } = await supabase.from('products').select('*').order('descripcion', { ascending: true });
+  if (error) throw error;
+  return (data || []).map((row) => mapRowToProduct(row as ProductRow));
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const products = await readProducts();
-  return products.find((p) => p.id === id) || null;
+  const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data ? mapRowToProduct(data as ProductRow) : null;
 }
 
 export async function createProduct(input: Product): Promise<Product> {
-  const normalizedStock =
-    typeof input.stockQuantity === 'number'
-      ? Math.max(0, Math.floor(input.stockQuantity))
-      : input.inStock !== false
-      ? 1
-      : 0;
-  const prepared: Product = {
-    ...input,
-    id: input.id || Date.now().toString(),
-    images: input.images && input.images.length > 0 ? input.images : [input.image],
-    specifications: input.specifications || [],
-    stockQuantity: normalizedStock,
-    inStock: normalizedStock > 0,
-    inOffer: input.inOffer || false,
-  };
-  const products = await readProducts();
-  await writeProducts([...products, prepared]);
-  return prepared;
+  const payload = mapProductToRow(input);
+  const { data, error } = await supabase.from('products').insert(payload).select('*').single();
+  if (error) throw error;
+  return mapRowToProduct(data as ProductRow);
 }
 
 export async function updateProduct(id: string, input: Partial<Product>): Promise<Product | null> {
-  const products = await readProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index < 0) return null;
-
-  const current = products[index];
-  const next: Product = {
-    ...current,
-    ...input,
-    id: current.id,
-    image: input.image || current.image,
-    images:
-      input.images && input.images.length > 0
-        ? input.images
-        : input.image
-        ? [input.image]
-        : current.images,
-    specifications: input.specifications || current.specifications,
-  };
-  if (typeof input.stockQuantity === 'number') {
-    next.stockQuantity = Math.max(0, Math.floor(input.stockQuantity));
-    next.inStock = next.stockQuantity > 0;
+  const payload = mapProductToRow(input);
+  const { data, error } = await supabase.from('products').update(payload).eq('id', id).select('*').single();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
   }
-  products[index] = next;
-  await writeProducts(products);
-  return next;
+  return data ? mapRowToProduct(data as ProductRow) : null;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const products = await readProducts();
-  const updated = products.filter((p) => p.id !== id);
-  if (updated.length === products.length) return false;
-  await writeProducts(updated);
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) throw error;
   return true;
 }

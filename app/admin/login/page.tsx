@@ -1,13 +1,19 @@
 'use client';
 
-import React from "react"
-
-import { useState, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
-import { LogIn } from 'lucide-react';
+
+function LoginFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+      <div className="text-primary-foreground">Cargando...</div>
+    </div>
+  );
+}
 
 function LoginContent() {
   const { login, isLoggedIn, isMounted } = useAuth();
@@ -17,6 +23,8 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [redirected, setRedirected] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const accessParam = searchParams.get('access');
 
   useEffect(() => {
     if (isLoggedIn && isMounted && !redirected) {
@@ -25,28 +33,39 @@ function LoginContent() {
     }
   }, [isLoggedIn, isMounted, redirected, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const tryAccessLogin = async () => {
+      if (!accessParam || loading || isLoggedIn) return;
+
+      setLoading(true);
+      setError('');
+      const ok = await login('admin', accessParam);
+      if (ok) {
+        router.push('/admin');
+      } else {
+        setError('Acceso invalido');
+      }
+      setLoading(false);
+    };
+
+    void tryAccessLogin();
+  }, [accessParam, isLoggedIn, loading, login, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      if (login(username, password)) {
-        router.push('/admin');
-      } else {
-        setError('Usuario o contraseña incorrectos');
-      }
-      setLoading(false);
-    }, 500);
+    const ok = await login(username, password);
+    if (ok) {
+      router.push('/admin');
+    } else {
+      setError('Usuario o contrasena incorrectos');
+    }
+    setLoading(false);
   };
 
-  if (!isMounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-        <div className="text-primary-foreground">Cargando...</div>
-      </div>
-    );
-  }
+  if (!isMounted) return <LoginFallback />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center p-4">
@@ -78,13 +97,13 @@ function LoginContent() {
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
-                  contraseña
+                  Contrasena
                 </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Ingresa tu contraseña"
+                  placeholder="Ingresa tu contrasena"
                   className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   disabled={loading}
                 />
@@ -106,7 +125,7 @@ function LoginContent() {
             </form>
 
             <p className="text-center text-xs text-muted-foreground mt-6">
-              Â© 2026 Rockink IMM - Panel de AdministraciÃ³n
+              © 2026 Rockink IMM - Panel de Administracion
             </p>
           </CardContent>
         </Card>
@@ -116,6 +135,9 @@ function LoginContent() {
 }
 
 export default function LoginPage() {
-  return <LoginContent />;
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginContent />
+    </Suspense>
+  );
 }
-

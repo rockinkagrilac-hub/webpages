@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createProduct, getProducts } from '@/lib/products-repo'
 import { Product } from '@/lib/data'
+import { isAuthorized } from '@/lib/admin-auth'
+import { productSchema } from '@/lib/validators'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,22 +36,14 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as Product
-    if (!body?.name) {
-      return jsonNoStore({ message: 'Nombre requerido' }, { status: 400 })
+    const parsed = productSchema.safeParse(body)
+    if (!parsed.success) {
+      return jsonNoStore({ message: 'Datos de producto invalidos' }, { status: 400 })
     }
 
-    const created = await createProduct(body)
+    const created = await createProduct(parsed.data as Product)
     return jsonNoStore(created, { status: 201 })
   } catch (error) {
     return jsonNoStore({ message: 'Error al crear producto' }, { status: 500 })
   }
-}
-const ADMIN_COOKIE = 'admin_access_ok'
-
-function isAuthorized(request: Request) {
-  const adminKey = process.env.ADMIN_ACCESS_KEY
-  const headerKey = request.headers.get('x-admin')
-  if (adminKey && headerKey === adminKey) return true
-  const cookieHeader = request.headers.get('cookie') || ''
-  return cookieHeader.split(/; */).some((pair) => pair.startsWith(`${ADMIN_COOKIE}=1`))
 }

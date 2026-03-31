@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getProductById, updateProduct, deleteProduct } from '@/lib/products-repo'
 import { Product } from '@/lib/data'
+import { isAuthorized } from '@/lib/admin-auth'
+import { productPatchSchema } from '@/lib/validators'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -16,16 +18,6 @@ function jsonNoStore(data: unknown, init?: ResponseInit) {
       ...(init?.headers || {}),
     },
   })
-}
-
-const ADMIN_COOKIE = 'admin_access_ok'
-
-function isAuthorized(request: Request) {
-  const adminKey = process.env.ADMIN_ACCESS_KEY
-  const headerKey = request.headers.get('x-admin')
-  if (adminKey && headerKey === adminKey) return true
-  const cookieHeader = request.headers.get('cookie') || ''
-  return cookieHeader.split(/; */).some((pair) => pair.startsWith(`${ADMIN_COOKIE}=1`))
 }
 
 export async function GET(
@@ -55,7 +47,12 @@ export async function PATCH(
   try {
     const { id } = await params
     const patch = (await request.json()) as Partial<Product>
-    const updated = await updateProduct(id, patch)
+    const parsed = productPatchSchema.safeParse(patch)
+    if (!parsed.success) {
+      return jsonNoStore({ message: 'Datos de producto invalidos' }, { status: 400 })
+    }
+
+    const updated = await updateProduct(id, parsed.data)
     if (!updated) {
       return jsonNoStore({ message: 'Producto no encontrado' }, { status: 404 })
     }
@@ -63,6 +60,13 @@ export async function PATCH(
   } catch (error) {
     return jsonNoStore({ message: 'Error al actualizar producto' }, { status: 500 })
   }
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return PATCH(request, context)
 }
 
 export async function DELETE(

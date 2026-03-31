@@ -47,7 +47,7 @@ export function Header({ isAdmin = false }: HeaderProps) {
                 <Link href="/admin" className="text-sm font-medium hover:text-secondary transition-colors duration-200">
                   Panel
                 </Link>
-                <Link href="/admin/productos" className="text-sm font-medium hover:text-secondary transition-colors duration-200">
+                <Link href="/admin" className="text-sm font-medium hover:text-secondary transition-colors duration-200">
                   Gestionar
                 </Link>
               </>
@@ -71,7 +71,7 @@ export function Header({ isAdmin = false }: HeaderProps) {
             )}
 
             {isAdmin && (
-              <Link href="/" onClick={closeMobileMenu}>
+              <Link href="/admin/logout" onClick={closeMobileMenu}>
                 <Button variant="outline" size="sm" className="border-primary-foreground/30 hover:border-primary-foreground hover:bg-primary/50 text-primary-foreground transition-all duration-200 bg-transparent">
                   <LogOut className="w-4 h-4 mr-2" />
                   Salir
@@ -115,7 +115,7 @@ export function Header({ isAdmin = false }: HeaderProps) {
                 <Link href="/admin" onClick={closeMobileMenu} className="py-2 px-3 hover:bg-primary/50 rounded-lg transition-colors duration-200 text-sm font-medium">
                   Panel
                 </Link>
-                <Link href="/admin/productos" onClick={closeMobileMenu} className="py-2 px-3 hover:bg-primary/50 rounded-lg transition-colors duration-200 text-sm font-medium">
+                <Link href="/admin" onClick={closeMobileMenu} className="py-2 px-3 hover:bg-primary/50 rounded-lg transition-colors duration-200 text-sm font-medium">
                   Gestionar
                 </Link>
               </>
