@@ -10,13 +10,15 @@ import { CartProvider } from '@/lib/cart-context';
 import { ArrowLeft, ShoppingCart, Check, Download, MessageCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import Script from 'next/script';
 import { createElement, useEffect, useMemo, useState } from 'react';
 
 type DetailTab = 'description' | 'specs' | 'video' | 'model3d';
 
 function ProductDetailContent({ productId }: { productId: string }) {
-  const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [added, setAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -24,24 +26,48 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const [activeTab, setActiveTab] = useState<DetailTab>('description');
   const { addItem } = useCart();
 
-  const product = allProducts.find((p) => p.id === productId);
-
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products', { cache: 'no-store' });
-        if (!response.ok) throw new Error('Error API');
-        const data = (await response.json()) as Product[];
-        setAllProducts(data);
+        const productResponse = await fetch(`/api/products/${productId}`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (!productResponse.ok) throw new Error('Error API');
+        const productData = (await productResponse.json()) as Product;
+        setProduct(productData);
+
+        const productsResponse = await fetch('/api/products', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (!productsResponse.ok) throw new Error('Error API');
+        const allProducts = (await productsResponse.json()) as Product[];
+        setRelatedProducts(
+          allProducts
+            .filter((item) => item.id !== productData.id && item.category === productData.category)
+            .slice(0, 4)
+        );
       } catch {
-        setAllProducts(PRODUCTS);
+        const fallbackProduct = PRODUCTS.find((item) => item.id === productId) || null;
+        setProduct(fallbackProduct);
+        setRelatedProducts(
+          fallbackProduct
+            ? PRODUCTS.filter((item) => item.id !== fallbackProduct.id && item.category === fallbackProduct.category).slice(0, 4)
+            : []
+        );
       } finally {
-        setIsLoadingProducts(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingProducts(false);
+        }
       }
     };
 
     void loadProducts();
-  }, []);
+    return () => controller.abort();
+  }, [productId]);
 
   const images = useMemo(() => {
     if (!product) return [] as string[];
@@ -52,13 +78,6 @@ function ProductDetailContent({ productId }: { productId: string }) {
     setActiveImageIndex(0);
     setActiveTab('description');
   }, [productId]);
-
-  const relatedProducts = useMemo(() => {
-    if (!product) return [] as Product[];
-    return allProducts
-      .filter((p) => p.id !== product.id && p.category === product.category)
-      .slice(0, 4);
-  }, [allProducts, product]);
 
   const handleAddCart = () => {
     addItem(productId);
@@ -152,7 +171,13 @@ function ProductDetailContent({ productId }: { productId: string }) {
                   onClick={() => setOpenZoom(true)}
                   className="relative w-full h-[340px] sm:h-[460px] bg-card rounded-xl overflow-hidden border border-border"
                 >
-                  <Image src={currentImage} alt={product.name} fill className="object-cover" />
+                  <Image
+                    src={currentImage}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover"
+                  />
                 </button>
                 <div className="grid grid-cols-4 gap-2">
                   {images.map((img, idx) => (
@@ -164,7 +189,13 @@ function ProductDetailContent({ productId }: { productId: string }) {
                         idx === activeImageIndex ? 'border-primary ring-2 ring-primary/30' : 'border-border'
                       }`}
                     >
-                      <Image src={img} alt={`${product.name} ${idx + 1}`} fill className="object-cover" />
+                      <Image
+                        src={img}
+                        alt={`${product.name} ${idx + 1}`}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -372,7 +403,13 @@ function ProductDetailContent({ productId }: { productId: string }) {
               <Link key={item.id} href={`/product/${item.id}`} className="group">
                 <Card className="overflow-hidden h-full border-border/60 hover:border-primary/50 transition-colors">
                   <div className="relative h-40 w-full">
-                    <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform" />
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform"
+                    />
                   </div>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground mb-1">{item.category}</p>
@@ -397,7 +434,13 @@ function ProductDetailContent({ productId }: { productId: string }) {
       <Dialog open={openZoom} onOpenChange={setOpenZoom}>
         <DialogContent className="sm:max-w-4xl p-2">
           <div className="relative w-full h-[70vh] rounded-md overflow-hidden bg-black">
-            <Image src={currentImage} alt={product.name} fill className="object-contain" />
+            <Image
+              src={currentImage}
+              alt={product.name}
+              fill
+              sizes="100vw"
+              className="object-contain"
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -405,8 +448,9 @@ function ProductDetailContent({ productId }: { productId: string }) {
   );
 }
 
-export default function ProductDetail({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function ProductDetail() {
+  const params = useParams<{ id: string }>();
+  const id = typeof params?.id === 'string' ? params.id : '';
 
   return (
     <CartProvider>

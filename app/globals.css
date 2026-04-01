@@ -2342,6 +2342,7 @@
   transition: opacity 0.8s ease, transform 0.8s ease;
 }
 
+
 @keyframes aboutSweep {
   from {
     transform: translateX(-120%) skewX(-20deg);

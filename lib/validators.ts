@@ -13,7 +13,7 @@ export const productSchema = z.object({
   description: z.string().trim().min(1).max(5000),
   category: z.string().trim().min(1).max(240),
   brand: z.string().trim().max(240).optional().or(z.literal('')),
-  images: z.array(imageUrlSchema).max(5).optional(),
+  images: z.array(imageUrlSchema).max(10).optional(),
   image: imageUrlSchema.optional().or(z.literal('')),
   model3dEmbedUrl: z.string().trim().max(2048).optional().or(z.literal('')),
   specifications: z.array(z.string().trim().max(500)).max(50).optional(),

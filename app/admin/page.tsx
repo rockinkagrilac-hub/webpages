@@ -13,7 +13,7 @@ import { Edit2, Trash2, Plus, Check, Award } from 'lucide-react';
 import Image from 'next/image';
 import { ImageUploader } from '@/components/image-uploader';
 
-const MAX_PRODUCT_IMAGES = 5;
+const MAX_PRODUCT_IMAGES = 10;
 const LOW_STOCK_THRESHOLD = 5;
 
 function AdminDashboardContent() {

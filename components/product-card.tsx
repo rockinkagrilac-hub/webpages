@@ -20,6 +20,7 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const images = product.images && product.images.length > 0 ? product.images : [product.image];
 
   useEffect(() => {
@@ -44,6 +45,15 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
     el.style.setProperty('--tilt-y', '0deg');
     el.style.setProperty('--glow-x', '50%');
     el.style.setProperty('--glow-y', '50%');
+    setIsHovered(false);
+    setCurrentImageIndex(0);
+  };
+
+  const handleTiltEnter = () => {
+    setIsHovered(true);
+    if (images.length > 1) {
+      setCurrentImageIndex(1);
+    }
   };
 
   const nextImage = (e: React.MouseEvent) => {
@@ -61,6 +71,7 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
   return (
     <Card
       onClick={() => router.push(`/product/${product.id}`)}
+      onMouseEnter={handleTiltEnter}
       onMouseMove={handleTiltMove}
       onMouseLeave={handleTiltLeave}
       className="interactive-tilt tilt-card overflow-hidden card-hover h-full flex flex-col border border-border/40 shadow-sm hover:shadow-xl hover:border-primary/20 cursor-pointer transition-all duration-300"
@@ -71,8 +82,9 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
           alt={product.name}
           fill
           loading="lazy"
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
           onLoad={() => setImageLoaded(true)}
-          className={`magnetic-image moving-product-image object-cover transition-transform duration-500 ${imageLoaded ? 'is-loaded' : ''}`}
+          className={`magnetic-image moving-product-image object-cover transition-transform duration-700 ease-out ${isHovered ? 'scale-105' : 'scale-100'} ${imageLoaded ? 'is-loaded' : ''}`}
         />
         <div className={`mosaic-mask ${imageLoaded ? 'is-hidden' : ''}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

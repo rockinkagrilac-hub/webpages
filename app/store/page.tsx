@@ -517,6 +517,7 @@ function StoreContent() {
                       alt={item.category}
                       fill
                       loading="lazy"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
@@ -665,6 +666,7 @@ function StoreContent() {
                       alt={`${quickViewProduct.name} ${idx + 1}`}
                       fill
                       loading="lazy"
+                      sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-cover"
                     />
                   </div>
