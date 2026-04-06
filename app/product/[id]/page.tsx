@@ -32,7 +32,6 @@ function ProductDetailContent({ productId }: { productId: string }) {
     const loadProducts = async () => {
       try {
         const productResponse = await fetch(`/api/products/${productId}`, {
-          cache: 'no-store',
           signal: controller.signal,
         });
         if (!productResponse.ok) throw new Error('Error API');
@@ -40,7 +39,6 @@ function ProductDetailContent({ productId }: { productId: string }) {
         setProduct(productData);
 
         const productsResponse = await fetch('/api/products', {
-          cache: 'no-store',
           signal: controller.signal,
         });
         if (!productsResponse.ok) throw new Error('Error API');
@@ -175,6 +173,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
                     src={currentImage}
                     alt={product.name}
                     fill
+                    quality={82}
                     sizes="(max-width: 1024px) 100vw, 50vw"
                     className="object-cover"
                   />
@@ -193,6 +192,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
                         src={img}
                         alt={`${product.name} ${idx + 1}`}
                         fill
+                        quality={68}
                         sizes="96px"
                         className="object-cover"
                       />
@@ -407,6 +407,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
                       src={item.image}
                       alt={item.name}
                       fill
+                      quality={70}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       className="object-cover group-hover:scale-105 transition-transform"
                     />
@@ -438,6 +439,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
               src={currentImage}
               alt={product.name}
               fill
+              quality={88}
               sizes="100vw"
               className="object-contain"
             />

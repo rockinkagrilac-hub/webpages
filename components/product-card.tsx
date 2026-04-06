@@ -82,6 +82,7 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
           alt={product.name}
           fill
           loading="lazy"
+          quality={70}
           sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
           onLoad={() => setImageLoaded(true)}
           className={`magnetic-image moving-product-image object-cover transition-transform duration-700 ease-out ${isHovered ? 'scale-105' : 'scale-100'} ${imageLoaded ? 'is-loaded' : ''}`}

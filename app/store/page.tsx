@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,17 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { PRODUCTS, Product } from '@/lib/data';
-import { getProductBrand, normalizeBrandName, productMatchesBrand } from '@/lib/product-brand';
+import { PRODUCTS, Product, ProductsPageResponse } from '@/lib/data';
+import { normalizeBrandName } from '@/lib/product-brand';
 import { CartProvider, useCart } from '@/lib/cart-context';
 import { ArrowLeft, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 
 const CATEGORY_TREE: Array<{ label: string; children?: string[] }> = [];
-
-function isPajillaToroProduct(product: Product) {
-  const text = `${product.name} ${product.description} ${product.category}`.toLowerCase();
-  return /\bpajillas?\b|\bsemen\b|\btoros?\b|\binseminaci[oó]n\b|\bia\b/.test(text);
-}
 
 function StoreContent() {
   const PRODUCTS_PER_PAGE = 16;
@@ -31,34 +26,23 @@ function StoreContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [isPajillasView, setIsPajillasView] = useState(false);
-  const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [categoryPreviews, setCategoryPreviews] = useState<Array<{ category: string; image: string }>>([]);
+  const [catalogTotal, setCatalogTotal] = useState(PRODUCTS.length);
+  const [totalResults, setTotalResults] = useState(PRODUCTS.length);
   const [searchTerm, setSearchTerm] = useState('');
   const [treeSearchTerm, setTreeSearchTerm] = useState('');
   const [selectedTreeFilters, setSelectedTreeFilters] = useState<string[]>([]);
   const [onlyOffers, setOnlyOffers] = useState(false);
   const [sortBy, setSortBy] = useState<'relevance' | 'name_asc' | 'name_desc'>('relevance');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const loadProducts = async () => {
-      try {
-        const response = await fetch('/api/products', { cache: 'no-store', signal: controller.signal });
-        if (!response.ok) throw new Error('Error API');
-        const data = (await response.json()) as Product[];
-        setAllProducts(data);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        setAllProducts(PRODUCTS);
-      }
-    };
-
-    void loadProducts();
-    return () => controller.abort();
-  }, []);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -77,70 +61,12 @@ function StoreContent() {
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
   const deferredTreeSearch = useDeferredValue(treeSearchTerm.trim().toLowerCase());
 
-  const categories = useMemo(() => {
-    const unique = new Set<string>();
-    for (const product of allProducts) {
-      const value = String(product.category || '').trim();
-      if (value) unique.add(value);
-    }
-    return Array.from(unique).sort((a, b) => a.localeCompare(b, 'es'));
-  }, [allProducts]);
-
-  const filteredProducts = useMemo(() => {
-    const q = deferredSearch;
-    const treeQ = selectedTreeFilters.map((v) => v.toLowerCase());
-    const base = allProducts.filter((p) => {
-      const text = `${p.name} ${p.description} ${p.category}`.toLowerCase();
-      if (isPajillasView && !isPajillaToroProduct(p)) return false;
-      if (selectedCategory && p.category !== selectedCategory) return false;
-      if (selectedBrand && !productMatchesBrand(p, selectedBrand)) return false;
-      if (onlyOffers && !p.inOffer) return false;
-      if (treeQ.length > 0 && !treeQ.some((token) => text.includes(token))) return false;
-      if (!q) return true;
-      return (
-        text.includes(q)
-      );
-    });
-
-    if (sortBy === 'name_asc') return [...base].sort((a, b) => a.name.localeCompare(b.name, 'es'));
-    if (sortBy === 'name_desc') return [...base].sort((a, b) => b.name.localeCompare(a.name, 'es'));
-    return base;
-  }, [allProducts, isPajillasView, selectedCategory, selectedBrand, onlyOffers, deferredSearch, sortBy, selectedTreeFilters]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
-
-  const categoryPreviewMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of allProducts) {
-      if (map.has(p.category)) continue;
-      if (p.image) map.set(p.category, p.image);
-    }
-    return map;
-  }, [allProducts]);
-
-  const categoryPreviews = useMemo(
-    () =>
-      categories.map((category) => ({
-        category,
-        image: categoryPreviewMap.get(category) || '/placeholder.svg',
-      })),
-    [categories, categoryPreviewMap]
-  );
-
-  const handleAddedToCart = (product: Product) => {
-    setToastMessage(`${product.name} agregado al carrito`);
-  };
-
   const quickViewImages = quickViewProduct?.images?.length
     ? quickViewProduct.images.slice(0, 2)
     : quickViewProduct
     ? [quickViewProduct.image]
     : [];
-  const availableBrands = Array.from(new Set(allProducts.map((p) => getProductBrand(p))));
+
   const activeFiltersCount =
     (selectedCategory ? 1 : 0) +
     (selectedBrand ? 1 : 0) +
@@ -148,8 +74,10 @@ function StoreContent() {
     (isPajillasView ? 1 : 0) +
     (searchTerm.trim() ? 1 : 0) +
     selectedTreeFilters.length;
+
   const quickCategories = categories.slice(0, 6);
   const hasCategories = categories.length > 0;
+
   const filteredTree = useMemo(() => {
     const q = deferredTreeSearch;
     if (!q) return CATEGORY_TREE;
@@ -208,6 +136,10 @@ function StoreContent() {
     return chips;
   }, [selectedCategory, selectedBrand, onlyOffers, isPajillasView, selectedTreeFilters]);
 
+  const handleAddedToCart = (product: Product) => {
+    setToastMessage(`${product.name} agregado al carrito`);
+  };
+
   const toggleTreeFilter = (value: string) => {
     setSelectedTreeFilters((prev) =>
       prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
@@ -228,6 +160,70 @@ function StoreContent() {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, selectedBrand, isPajillasView, onlyOffers, sortBy, deferredSearch, deferredTreeSearch, selectedTreeFilters]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadProducts = async () => {
+      setIsLoadingProducts(true);
+      try {
+        const params = new URLSearchParams();
+        params.set('paginated', '1');
+        params.set('page', String(currentPage));
+        params.set('perPage', String(PRODUCTS_PER_PAGE));
+        params.set('sortBy', sortBy);
+        if (deferredSearch) params.set('search', deferredSearch);
+        if (selectedCategory) params.set('category', selectedCategory);
+        if (selectedBrand) params.set('brand', selectedBrand);
+        if (onlyOffers) params.set('onlyOffers', '1');
+        if (isPajillasView) params.set('pajillas', '1');
+        selectedTreeFilters.forEach((filter) => params.append('tree', filter));
+
+        const response = await fetch(`/api/products?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error('Error API');
+        const data = (await response.json()) as ProductsPageResponse;
+
+        setProducts(Array.isArray(data.items) ? data.items : []);
+        setCategories(Array.isArray(data.categories) ? data.categories : []);
+        setAvailableBrands(Array.isArray(data.brands) ? data.brands : []);
+        setCategoryPreviews(Array.isArray(data.categoryPreviews) ? data.categoryPreviews : []);
+        setCatalogTotal(typeof data.catalogTotal === 'number' ? data.catalogTotal : 0);
+        setTotalResults(typeof data.total === 'number' ? data.total : 0);
+        setTotalPages(typeof data.totalPages === 'number' ? data.totalPages : 1);
+
+        if (typeof data.page === 'number' && data.page !== currentPage) {
+          setCurrentPage(data.page);
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setProducts(PRODUCTS);
+        setCategories([]);
+        setAvailableBrands([]);
+        setCategoryPreviews([]);
+        setCatalogTotal(PRODUCTS.length);
+        setTotalResults(PRODUCTS.length);
+        setTotalPages(1);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingProducts(false);
+        }
+      }
+    };
+
+    void loadProducts();
+    return () => controller.abort();
+  }, [
+    currentPage,
+    deferredSearch,
+    selectedCategory,
+    selectedBrand,
+    onlyOffers,
+    isPajillasView,
+    sortBy,
+    selectedTreeFilters,
+  ]);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -258,7 +254,7 @@ function StoreContent() {
             )}
           </h1>
           <p className="text-base sm:text-xl text-muted-foreground max-w-2xl">
-            Explora nuestro catalogo completo de soluciones de ingenieria ganadera. {allProducts.length} productos disponibles.
+            Explora nuestro catalogo completo de soluciones de ingenieria ganadera. {catalogTotal} productos disponibles.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link href="#products">
@@ -267,16 +263,7 @@ function StoreContent() {
             <Button
               variant="outline"
               className="rounded-full px-5"
-              onClick={() => {
-                setSelectedCategory(null);
-                setSelectedBrand(null);
-                setSearchTerm('');
-                setTreeSearchTerm('');
-                setSelectedTreeFilters([]);
-                setOnlyOffers(false);
-                setIsPajillasView(false);
-                setSortBy('relevance');
-              }}
+              onClick={resetFilters}
             >
               Reiniciar filtros
             </Button>
@@ -284,7 +271,7 @@ function StoreContent() {
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl">
             <div className="rounded-xl border bg-background/80 px-4 py-3">
               <p className="text-xs text-muted-foreground">Productos</p>
-              <p className="text-xl font-bold text-foreground">{allProducts.length}</p>
+              <p className="text-xl font-bold text-foreground">{catalogTotal}</p>
             </div>
             {hasCategories && (
               <div className="rounded-xl border bg-background/80 px-4 py-3">
@@ -298,7 +285,7 @@ function StoreContent() {
             </div>
             <div className="rounded-xl border bg-background/80 px-4 py-3">
               <p className="text-xs text-muted-foreground">Resultados</p>
-              <p className="text-xl font-bold text-primary">{filteredProducts.length}</p>
+              <p className="text-xl font-bold text-primary">{totalResults}</p>
             </div>
           </div>
         </div>
@@ -423,7 +410,7 @@ function StoreContent() {
                 {showMobileFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
               </Button>
               <p className="text-sm text-muted-foreground">
-                {filteredProducts.length} resultados
+                {totalResults} resultados
               </p>
             </div>
 
@@ -517,6 +504,7 @@ function StoreContent() {
                       alt={item.category}
                       fill
                       loading="lazy"
+                      quality={60}
                       sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -542,8 +530,8 @@ function StoreContent() {
                 )}
               </h2>
               <p className="text-base text-muted-foreground">
-                {filteredProducts.length} productos disponibles
-                {filteredProducts.length > 0 && (
+                {totalResults} productos disponibles
+                {totalResults > 0 && (
                   <span>{` · Página ${currentPage} de ${totalPages}`}</span>
                 )}
               </p>
@@ -556,14 +544,14 @@ function StoreContent() {
               <p className="text-sm text-muted-foreground">
                 Mostrando{' '}
                 <span className="font-semibold text-foreground">
-                  {filteredProducts.length === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1}
+                  {totalResults === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1}
                 </span>
                 {' '}a{' '}
                 <span className="font-semibold text-foreground">
-                  {Math.min(currentPage * PRODUCTS_PER_PAGE, filteredProducts.length)}
+                  {Math.min(currentPage * PRODUCTS_PER_PAGE, totalResults)}
                 </span>
                 {' '}de{' '}
-                <span className="font-semibold text-foreground">{filteredProducts.length}</span>
+                <span className="font-semibold text-foreground">{totalResults}</span>
                 {' '}resultados
               </p>
               <p className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -572,7 +560,7 @@ function StoreContent() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {paginatedProducts.map((product, idx) => (
+              {products.map((product, idx) => (
                 <div key={product.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
                   <ProductCard
                     product={product}
@@ -583,7 +571,7 @@ function StoreContent() {
               ))}
             </div>
 
-            {filteredProducts.length > PRODUCTS_PER_PAGE && (
+            {totalResults > PRODUCTS_PER_PAGE && (
               <div className="pt-8">
                 <div className="overflow-x-auto">
                   <div className="flex items-center justify-center gap-2 min-w-max px-1">
@@ -624,7 +612,7 @@ function StoreContent() {
               </div>
             )}
 
-            {filteredProducts.length === 0 && (
+            {!isLoadingProducts && totalResults === 0 && (
               <div className="text-center py-24">
                 <h3 className="text-3xl font-bold text-foreground mb-4">
                   No hay productos con esos filtros
@@ -666,6 +654,7 @@ function StoreContent() {
                       alt={`${quickViewProduct.name} ${idx + 1}`}
                       fill
                       loading="lazy"
+                      quality={70}
                       sizes="(max-width: 640px) 100vw, 50vw"
                       className="object-cover"
                     />

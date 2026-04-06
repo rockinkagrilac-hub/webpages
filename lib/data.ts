@@ -34,6 +34,23 @@ export interface HeroSlide {
   description: string;
 }
 
+export interface CategoryPreview {
+  category: string;
+  image: string;
+}
+
+export interface ProductsPageResponse {
+  items: Product[];
+  total: number;
+  totalPages: number;
+  page: number;
+  perPage: number;
+  catalogTotal: number;
+  categories: string[];
+  brands: string[];
+  categoryPreviews: CategoryPreview[];
+}
+
 export const PRODUCTS: Product[] = [];
 
 export const DEFAULT_BRANDS: Brand[] = [

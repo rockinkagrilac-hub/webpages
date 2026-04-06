@@ -20,6 +20,16 @@ function jsonNoStore(data: unknown, init?: ResponseInit) {
   })
 }
 
+function jsonPublicCache(data: unknown, init?: ResponseInit) {
+  return NextResponse.json(data, {
+    ...init,
+    headers: {
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=900',
+      ...(init?.headers || {}),
+    },
+  })
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -30,7 +40,7 @@ export async function GET(
     if (!product) {
       return jsonNoStore({ message: 'Producto no encontrado' }, { status: 404 })
     }
-    return jsonNoStore(product)
+    return jsonPublicCache(product)
   } catch {
     return jsonNoStore({ message: 'Error al leer producto' }, { status: 500 })
   }
