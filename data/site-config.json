@@ -2,24 +2,19 @@
   "offersProducts": [],
   "brands": [
     {
+      "id": "1",
+      "name": "Lister",
+      "logo": "https://static1.squarespace.com/static/5e8c3085abdf3f0f0c45b6dc/t/639093e981ece801a7d9c4c6/1775725499595/"
+    },
+    {
       "id": "2",
       "name": "CRV",
-      "logo": "https://images.unsplash.com/photo-1560264357-8d9766985b90?w=300&h=140&fit=crop"
+      "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJeb9hGt6c4-BhPAl6p34PivNItvfAQ2NP4g&s"
     },
     {
       "id": "3",
       "name": "Melasty",
-      "logo": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=140&fit=crop"
-    },
-    {
-      "id": "4",
-      "name": "Sunway",
-      "logo": "https://images.unsplash.com/photo-1560264357-8d9766985b90?w=300&h=140&fit=crop"
-    },
-    {
-      "id": "1773948976809",
-      "name": "Lister",
-      "logo": "https://www.wynnstayplc.co.uk/media/aw_blog/Lister_ShearingFacebook_Ad.png"
+      "logo": "https://pbs.twimg.com/profile_images/1354803880580706310/k9_Ijr_K_400x400.jpg"
     }
   ],
   "heroSlides": [
