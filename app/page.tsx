@@ -1009,19 +1009,14 @@ function HomeContent() {
             {currentHeroSlide.description}
           </p>
 
-          <div className="hero-stagger-item flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-10 sm:mb-16" style={{ animationDelay: '420ms' }}>
-            <Link href="/store" className="w-full sm:w-auto">
-              <Button className="premium-button w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 text-base sm:text-lg">
-                Ver Tienda
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link href="/store" className="w-full sm:w-auto">
-              <Button variant="outline" className="premium-button w-full sm:w-auto border-2 border-white/40 text-white hover:bg-white/10 text-base sm:text-lg bg-transparent">
-                Ver Tienda Completa
-              </Button>
-            </Link>
-          </div>
+            <div className="hero-stagger-item flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-10 sm:mb-16" style={{ animationDelay: '420ms' }}>
+              <Link href="/store" className="w-full sm:w-auto">
+                <Button className="premium-button w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 text-base sm:text-lg">
+                  Ver Tienda
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+            </div>
 
           <div ref={statsRef} className="hero-stagger-item mt-10 sm:mt-20 pt-10 sm:pt-20 border-t border-white/20" style={{ animationDelay: '520ms' }}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

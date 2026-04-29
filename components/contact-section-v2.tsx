@@ -92,14 +92,14 @@ export function ContactSectionV2() {
 
   return (
     <>
-      <section className="relative overflow-hidden pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 md:px-8 bg-gradient-to-b from-primary/10 via-background to-background">
+      <section className="hex-grid-bg relative overflow-hidden pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 md:px-8 bg-gradient-to-b from-primary/10 via-background to-background">
         <div className="absolute inset-0 opacity-60 pointer-events-none">
           <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/80 px-4 py-2 text-sm font-semibold text-primary shadow-sm">
+          <div className="hex-chip inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/80 px-4 py-2 text-sm font-semibold text-primary shadow-sm">
             <Sparkles className="w-4 h-4" />
             Centro de contacto Rockink IMM
           </div>
@@ -140,7 +140,7 @@ export function ContactSectionV2() {
                     href={item.href}
                     target={item.href.startsWith('http') ? '_blank' : undefined}
                     rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
-                    className="rounded-2xl border border-border bg-background/90 backdrop-blur-sm p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                    className="hex-panel rounded-2xl border border-border bg-background/90 backdrop-blur-sm p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                   >
                     <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                       <Icon className="w-5 h-5" />
@@ -154,7 +154,7 @@ export function ContactSectionV2() {
               })}
             </div>
 
-            <div className="mt-4 rounded-2xl border border-border bg-background/90 backdrop-blur-sm p-4 shadow-sm">
+            <div className="hex-panel mt-4 rounded-2xl border border-border bg-background/90 backdrop-blur-sm p-4 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Cobertura y ubicacion</p>
@@ -191,7 +191,7 @@ export function ContactSectionV2() {
 
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-border">
                 {mapFocus === 'peru' && (
-                  <div className="absolute left-4 top-4 z-10 max-w-[260px] rounded-2xl border border-white/30 bg-background/88 px-4 py-3 shadow-lg backdrop-blur-sm">
+                  <div className="hex-panel absolute left-4 top-4 z-10 max-w-[260px] rounded-2xl border border-white/30 bg-background/88 px-4 py-3 shadow-lg backdrop-blur-sm">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Cobertura nacional</p>
                     <p className="mt-1 text-sm font-bold text-foreground">Hacemos envios a todo el Peru</p>
                     <p className="mt-1 text-xs text-muted-foreground">Despachamos desde Arequipa con atencion comercial para distintas regiones.</p>
@@ -217,7 +217,7 @@ export function ContactSectionV2() {
       <section id="contacto" className="py-16 sm:py-20 px-4 sm:px-6 md:px-8 bg-background">
         <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-[0.95fr_1.05fr] gap-8">
           <div className="space-y-6">
-            <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+            <div className="hex-panel rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary mb-3">
                 Operacion y soporte
               </p>
@@ -230,7 +230,7 @@ export function ContactSectionV2() {
               </p>
 
               <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-2xl bg-muted/50 border border-border/70 p-4">
+                <div className="hex-panel rounded-2xl bg-muted/50 border border-border/70 p-4">
                   <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
                     <Phone className="w-5 h-5" />
                   </div>
@@ -238,7 +238,7 @@ export function ContactSectionV2() {
                   <p className="text-sm text-muted-foreground mt-1">+51 962838329</p>
                 </div>
 
-                <div className="rounded-2xl bg-muted/50 border border-border/70 p-4">
+                <div className="hex-panel rounded-2xl bg-muted/50 border border-border/70 p-4">
                   <div className="w-10 h-10 rounded-full bg-secondary/15 text-secondary flex items-center justify-center mb-3">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
@@ -250,14 +250,14 @@ export function ContactSectionV2() {
 
             <div
               id="faq"
-              className="scroll-mt-28 rounded-3xl border border-border bg-gradient-to-br from-card to-muted/30 p-6 sm:p-8 shadow-sm"
+            className="hex-panel scroll-mt-28 rounded-3xl border border-border bg-gradient-to-br from-card to-muted/30 p-6 sm:p-8 shadow-sm"
             >
               <h3 className="text-2xl font-bold text-foreground mb-5">Preguntas frecuentes</h3>
               <div className="space-y-3">
                 {faqs.map((item, index) => (
                   <div
                     key={item}
-                    className="rounded-2xl border border-border/70 bg-background/90 px-4 py-4 hover:border-primary/30 hover:shadow-md transition-all duration-300"
+                    className="hex-panel rounded-2xl border border-border/70 bg-background/90 px-4 py-4 hover:border-primary/30 hover:shadow-md transition-all duration-300"
                   >
                     <p className="text-sm font-semibold text-primary mb-1">{`0${index + 1}`}</p>
                     <p className="text-sm text-muted-foreground leading-relaxed">{item}</p>
@@ -269,7 +269,7 @@ export function ContactSectionV2() {
 
           <div
             id="formulario-contacto"
-            className="scroll-mt-28 rounded-[2rem] border border-border bg-background shadow-xl overflow-hidden"
+            className="hex-panel scroll-mt-28 rounded-[2rem] border border-border bg-background shadow-xl overflow-hidden"
           >
             <div className="bg-gradient-to-r from-primary via-secondary to-accent px-6 sm:px-8 py-6 text-primary-foreground">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] opacity-90">Formulario</p>
@@ -334,7 +334,7 @@ export function ContactSectionV2() {
 
       <section className="py-14 sm:py-18 px-4 sm:px-6 md:px-8 bg-muted/30 border-y border-border/40">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-2xl bg-background border border-border p-5 shadow-sm">
+          <div className="hex-panel rounded-2xl bg-background border border-border p-5 shadow-sm">
             <p className="text-sm font-semibold text-primary mb-2">Redes</p>
             <p className="text-xs text-muted-foreground mb-4">
               Canales oficiales con respuestas rapidas y contenido tecnico.
@@ -346,7 +346,7 @@ export function ContactSectionV2() {
                   href={social.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="group rounded-2xl border border-border/70 bg-white px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg"
+                  className="hex-panel group rounded-2xl border border-border/70 bg-white px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${social.color} ${social.glow} flex items-center justify-center`}>
@@ -365,7 +365,7 @@ export function ContactSectionV2() {
             </div>
           </div>
 
-          <div className="rounded-2xl bg-background border border-border p-5 shadow-sm">
+          <div className="hex-panel rounded-2xl bg-background border border-border p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-foreground mb-3">Conocenos</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/about" className="hover:text-primary transition-colors">Sobre nosotros</Link></li>
@@ -375,7 +375,7 @@ export function ContactSectionV2() {
             </ul>
           </div>
 
-          <div className="rounded-2xl bg-background border border-border p-5 shadow-sm">
+          <div className="hex-panel rounded-2xl bg-background border border-border p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-foreground mb-3">Legal</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/privacidad" className="hover:text-primary transition-colors">Politicas de Privacidad</Link></li>

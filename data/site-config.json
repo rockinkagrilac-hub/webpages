@@ -1,5 +1,8 @@
 {
-  "offersProducts": [],
+  "offersProducts": [
+    "d08deec5-0969-4fe1-bfb6-8b68da3fdd11",
+    "3f10887b-1b11-4e3c-81cd-5c9077bf7167"
+  ],
   "brands": [
     {
       "id": "1",

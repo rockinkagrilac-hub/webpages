@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,8 +23,6 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [redirected, setRedirected] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const accessParam = searchParams.get('access');
 
   useEffect(() => {
     if (isLoggedIn && isMounted && !redirected) {
@@ -33,34 +31,16 @@ function LoginContent() {
     }
   }, [isLoggedIn, isMounted, redirected, router]);
 
-  useEffect(() => {
-    const tryAccessLogin = async () => {
-      if (!accessParam || loading || isLoggedIn) return;
-
-      setLoading(true);
-      setError('');
-      const ok = await login('admin', accessParam);
-      if (ok) {
-        router.push('/admin');
-      } else {
-        setError('Acceso invalido');
-      }
-      setLoading(false);
-    };
-
-    void tryAccessLogin();
-  }, [accessParam, isLoggedIn, loading, login, router]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const ok = await login(username, password);
-    if (ok) {
+    const result = await login(username, password);
+    if (result.ok) {
       router.push('/admin');
     } else {
-      setError('Usuario o contrasena incorrectos');
+      setError(result.message || 'Usuario o contrasena incorrectos');
     }
     setLoading(false);
   };

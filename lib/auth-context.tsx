@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ ok: boolean; message?: string }>;
   logout: () => void;
   isMounted: boolean;
 }
@@ -13,7 +13,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const defaultValue: AuthContextType = {
   isLoggedIn: false,
-  login: async () => false,
+  login: async () => ({ ok: false }),
   logout: () => {},
   isMounted: false,
 };
@@ -31,7 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (
+    username: string,
+    password: string
+  ): Promise<{ ok: boolean; message?: string }> => {
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
@@ -40,14 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        return false;
+        try {
+          const data = (await response.json()) as { message?: string };
+          return { ok: false, message: data.message || 'No se pudo iniciar sesion' };
+        } catch {
+          return { ok: false, message: 'No se pudo iniciar sesion' };
+        }
       }
 
       setIsLoggedIn(true);
       sessionStorage.setItem('adminLoggedIn', 'true');
-      return true;
+      return { ok: true };
     } catch {
-      return false;
+      return { ok: false, message: 'Error de red o de conexion con el servidor' };
     }
   };
 

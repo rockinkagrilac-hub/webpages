@@ -41,8 +41,6 @@ export async function POST(request: Request) {
     }
 
     const { username, password } = parsed.data
-    const adminKey = process.env.ADMIN_ACCESS_KEY
-
     const { data, error } = await supabase
       .from('admin_users')
       .select('id, username, password_hash, is_active')
@@ -51,22 +49,26 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (error) {
-      if (adminKey && password === adminKey) {
-        loginAttempts.delete(ip)
-        const response = jsonNoStore({ ok: true, fallback: true })
-        return setAdminCookie(response)
-      }
-      return jsonNoStore({ message: 'Error al validar acceso' }, { status: 500 })
+      return jsonNoStore(
+        {
+          message:
+            process.env.NODE_ENV === 'development'
+              ? `Error Supabase: ${error.message}`
+              : 'Error al validar acceso',
+        },
+        { status: 500 }
+      )
     }
 
     if (!data || data.is_active === false) {
-      if (adminKey && password === adminKey) {
-        loginAttempts.delete(ip)
-        const response = jsonNoStore({ ok: true, fallback: true })
-        return setAdminCookie(response)
-      }
+      const reason = !data ? 'Usuario no encontrado' : 'Usuario inactivo'
       registerFailedAttempt(ip, now)
-      return jsonNoStore({ message: 'Unauthorized' }, { status: 401 })
+      return jsonNoStore(
+        {
+          message: process.env.NODE_ENV === 'development' ? reason : 'Unauthorized',
+        },
+        { status: 401 }
+      )
     }
 
     const stored = data.password_hash || ''
@@ -79,7 +81,15 @@ export async function POST(request: Request) {
 
     if (!ok) {
       registerFailedAttempt(ip, now)
-      return jsonNoStore({ message: 'Unauthorized' }, { status: 401 })
+      return jsonNoStore(
+        {
+          message:
+            process.env.NODE_ENV === 'development'
+              ? 'Contrasena invalida'
+              : 'Unauthorized',
+        },
+        { status: 401 }
+      )
     }
 
     loginAttempts.delete(ip)

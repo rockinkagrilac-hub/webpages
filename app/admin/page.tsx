@@ -1,10 +1,8 @@
 ﻿'use client';
 
-import React from "react"
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -99,12 +97,11 @@ function AdminDashboardContent() {
   }, [isMounted, isLoggedIn, redirected, router]);
 
   useEffect(() => {
-    if (isMounted) {
-      void loadProductsFromApi();
-      void loadSiteConfigFromApi();
+    if (!isMounted || !isLoggedIn) return;
 
-    }
-  }, [isMounted]);
+    void loadProductsFromApi();
+    void loadSiteConfigFromApi();
+  }, [isMounted, isLoggedIn]);
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,7 +253,7 @@ function AdminDashboardContent() {
     }
   };
 
-  if (!isLoggedIn) return null;
+  if (!isMounted || !isLoggedIn) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -667,12 +664,11 @@ function AdminDashboardContent() {
                 {brands.map((brand) => (
                   <Card key={brand.id}>
                     <CardContent className="p-4 flex items-center gap-4">
-                      <div className="relative w-24 h-16 bg-muted rounded flex-shrink-0">
-                        <Image
-                          src={brand.logo}
+                      <div className="relative w-24 h-16 bg-muted rounded flex-shrink-0 overflow-hidden">
+                        <img
+                          src={brand.logo || '/placeholder.svg'}
                           alt={brand.name}
-                          fill
-                          className="object-contain rounded p-2"
+                          className="h-full w-full object-contain rounded p-2"
                         />
                       </div>
                       <div className="flex-grow">
@@ -699,11 +695,7 @@ function AdminDashboardContent() {
 }
 
 export default function AdminPage() {
-  return (
-    <AuthProvider>
-      <AdminDashboardContent />
-    </AuthProvider>
-  );
+  return <AdminDashboardContent />;
 }
 
 
