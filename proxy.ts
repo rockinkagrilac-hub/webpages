@@ -11,8 +11,12 @@ export function proxy(request: NextRequest) {
   const isProductsApi = pathname.startsWith('/api/products')
   const isSiteConfigApi = pathname.startsWith('/api/site-config')
 
-  // Permitir GET públicos de productos para la tienda
-  if (isProductsApi && request.method === 'GET') return NextResponse.next()
+  // Permitir GET públicos de productos (tienda) y de la configuración del sitio
+  // (marcas y slides del hero que muestra la portada). La escritura sigue
+  // protegida: el PUT de cada ruta valida la sesión de admin.
+  if ((isProductsApi || isSiteConfigApi) && request.method === 'GET') {
+    return NextResponse.next()
+  }
   if (isAdminLoginPage) return NextResponse.next()
 
   const isProtected = isAdminPage || isProductsApi || isSiteConfigApi
