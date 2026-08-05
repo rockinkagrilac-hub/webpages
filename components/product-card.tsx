@@ -1,12 +1,11 @@
-﻿'use client';
+'use client';
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/lib/data';
 import { useCart } from '@/lib/cart-context';
-import { ShoppingCart, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ProductCardProps {
@@ -26,34 +25,17 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
   useEffect(() => {
     setImageLoaded(false);
   }, [currentImageIndex, product.id]);
-  const handleTiltMove = (event: React.MouseEvent<HTMLElement>) => {
-    const el = event.currentTarget;
-    const rect = el.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const rotateX = ((y / rect.height) - 0.5) * -9;
-    const rotateY = ((x / rect.width) - 0.5) * 9;
-    el.style.setProperty('--tilt-x', `${rotateX.toFixed(2)}deg`);
-    el.style.setProperty('--tilt-y', `${rotateY.toFixed(2)}deg`);
-    el.style.setProperty('--glow-x', `${(x / rect.width) * 100}%`);
-    el.style.setProperty('--glow-y', `${(y / rect.height) * 100}%`);
-  };
 
-  const handleTiltLeave = (event: React.MouseEvent<HTMLElement>) => {
-    const el = event.currentTarget;
-    el.style.setProperty('--tilt-x', '0deg');
-    el.style.setProperty('--tilt-y', '0deg');
-    el.style.setProperty('--glow-x', '50%');
-    el.style.setProperty('--glow-y', '50%');
-    setIsHovered(false);
-    setCurrentImageIndex(0);
-  };
-
-  const handleTiltEnter = () => {
+  const handleMouseEnter = () => {
     setIsHovered(true);
     if (images.length > 1) {
       setCurrentImageIndex(1);
     }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setCurrentImageIndex(0);
   };
 
   const nextImage = (e: React.MouseEvent) => {
@@ -69,14 +51,13 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
   };
 
   return (
-    <Card
+    <article
       onClick={() => router.push(`/product/${product.id}`)}
-      onMouseEnter={handleTiltEnter}
-      onMouseMove={handleTiltMove}
-      onMouseLeave={handleTiltLeave}
-      className="interactive-tilt tilt-card overflow-hidden card-hover h-full flex flex-col border border-border/40 shadow-sm hover:shadow-xl hover:border-primary/20 cursor-pointer transition-all duration-300"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="ap-card group h-full flex flex-col overflow-hidden cursor-pointer"
     >
-      <div className="shader-energy-wrap image-liquid-reveal relative w-full h-52 sm:h-56 bg-gradient-to-br from-muted to-muted/50 overflow-hidden group">
+      <div className="relative w-full h-52 sm:h-56 bg-muted overflow-hidden">
         <Image
           src={images[currentImageIndex] || '/placeholder.svg'}
           alt={product.name}
@@ -85,90 +66,85 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
           quality={70}
           sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
           onLoad={() => setImageLoaded(true)}
-          className={`magnetic-image moving-product-image object-cover transition-transform duration-700 ease-out ${isHovered ? 'scale-105' : 'scale-100'} ${imageLoaded ? 'is-loaded' : ''}`}
+          className={`object-cover transition-all duration-700 ease-out ${
+            isHovered ? 'scale-105' : 'scale-100'
+          } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
-        <div className={`mosaic-mask ${imageLoaded ? 'is-hidden' : ''}`} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        <div className="absolute top-3 right-3 bg-accent text-accent-foreground px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-lg">
-          <Tag className="w-3 h-3" />
-          {product.category}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+          <span className="bg-background/90 backdrop-blur-sm text-foreground px-2.5 py-1 rounded-full text-[11px] font-semibold border border-border">
+            {product.category}
+          </span>
+          {product.inOffer && (
+            <span className="bg-primary text-primary-foreground px-2.5 py-1 rounded-full text-[11px] font-semibold">
+              Oferta
+            </span>
+          )}
         </div>
-        {product.inOffer && (
-          <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-3 py-1 rounded-lg text-[11px] font-bold shadow-lg">
-            Oferta
-          </div>
-        )}
 
         {images.length > 1 && (
           <>
             <button
               onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/70 text-white p-1 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+              aria-label="Imagen anterior"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/85 hover:bg-background text-foreground p-1.5 rounded-full shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/55 hover:bg-black/70 text-white p-1 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+              aria-label="Imagen siguiente"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/85 hover:bg-background text-foreground p-1.5 rounded-full shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
               {images.map((_, idx) => (
-                <div
+                <span
                   key={idx}
-                  className={`h-1 rounded-full ${
-                    idx === currentImageIndex ? 'bg-white w-4' : 'bg-white/50 w-2'
-                  } transition-all`}
+                  className={`h-1 rounded-full transition-all ${
+                    idx === currentImageIndex ? 'bg-foreground w-4' : 'bg-foreground/30 w-2'
+                  }`}
                 />
               ))}
             </div>
           </>
         )}
-
-        <div className="absolute inset-x-0 bottom-0 p-3 translate-y-0 opacity-100 sm:translate-y-6 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 transition-all duration-300">
-          <div className="rounded-md bg-black/55 text-white text-xs px-3 py-2 backdrop-blur-sm">
-            Toca para ver más detalles
-          </div>
-        </div>
       </div>
 
-      <CardContent className="p-5 flex flex-col flex-grow">
-        <h3 className="text-base font-bold text-foreground hover:text-primary mb-2 line-clamp-2 transition-colors duration-200">
+      <div className="p-5 flex flex-col flex-grow">
+        <h3 className="text-base font-semibold text-foreground group-hover:text-primary mb-2 line-clamp-2 transition-colors duration-200">
           {product.name}
         </h3>
 
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow leading-relaxed">
+        <p className="text-sm text-muted-foreground mb-5 line-clamp-2 flex-grow leading-relaxed">
           {product.description}
         </p>
 
-        <div className="pt-2 border-t border-border/30">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickView?.(product);
-              }}
-              className="text-sm"
-            >
-              Vista rápida
-            </Button>
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                addItem(product.id);
-                onAddedToCart?.(product);
-              }}
-              className="btn-primary shadow-md text-sm w-full"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Añadir
-            </Button>
-          </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuickView?.(product);
+            }}
+            className="rounded-full text-sm"
+          >
+            Vista rapida
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              addItem(product.id);
+              onAddedToCart?.(product);
+            }}
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm w-full"
+          >
+            <ShoppingCart className="w-4 h-4 mr-1.5" />
+            Anadir
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 }

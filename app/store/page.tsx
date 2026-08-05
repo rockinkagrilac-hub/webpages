@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState, useDeferredValue } from 'react';
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
 import { ProductCard } from '@/components/product-card';
 import { Button } from '@/components/ui/button';
 import {
@@ -689,6 +690,8 @@ function StoreContent() {
           <p className="text-sm font-medium text-foreground">{toastMessage}</p>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }

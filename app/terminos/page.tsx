@@ -1,4 +1,5 @@
 ﻿import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
 import { CartProvider } from '@/lib/cart-context';
 
 function TermsContent() {
@@ -66,6 +67,8 @@ function TermsContent() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

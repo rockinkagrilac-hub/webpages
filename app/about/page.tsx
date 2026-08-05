@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { CartProvider } from '@/lib/cart-context';
+import { useScrollFx, useRevealOnScroll } from '@/lib/use-scroll-fx';
 import {
   Award,
   CheckCircle2,
+  ChevronRight,
   Leaf,
   MapPin,
-  PlayCircle,
   ShieldCheck,
   Users,
   Zap,
@@ -37,26 +39,16 @@ const FLOW_STEPS = [
 ];
 
 const VALUE_CARDS = [
-  {
-    icon: Award,
-    title: 'Excelencia',
-    desc: 'Calidad consistente y criterio tecnico en cada seleccion.',
-  },
-  {
-    icon: Users,
-    title: 'Confianza',
-    desc: 'Relacion de largo plazo basada en respuesta, cumplimiento y seguimiento.',
-  },
-  {
-    icon: Leaf,
-    title: 'Sostenibilidad',
-    desc: 'Procesos mas eficientes con enfoque operativo responsable.',
-  },
-  {
-    icon: CheckCircle2,
-    title: 'Innovacion',
-    desc: 'Soluciones tecnicas aplicadas con mentalidad de mejora continua.',
-  },
+  { icon: Award, title: 'Excelencia', desc: 'Calidad consistente y criterio tecnico en cada seleccion.' },
+  { icon: Users, title: 'Confianza', desc: 'Relacion de largo plazo basada en respuesta, cumplimiento y seguimiento.' },
+  { icon: Leaf, title: 'Sostenibilidad', desc: 'Procesos mas eficientes con enfoque operativo responsable.' },
+  { icon: CheckCircle2, title: 'Innovacion', desc: 'Soluciones tecnicas aplicadas con mentalidad de mejora continua.' },
+];
+
+const PILLARS = [
+  { title: 'Precision', desc: 'Seleccion tecnica de productos para resultados consistentes.' },
+  { title: 'Sostenibilidad', desc: 'Operacion responsable, eficiente y orientada a continuidad.' },
+  { title: 'Velocidad', desc: 'Respuesta comercial agil para operaciones que no pueden esperar.' },
 ];
 
 function AboutContent() {
@@ -68,24 +60,8 @@ function AboutContent() {
     optimizacion: 0,
   });
 
-  useEffect(() => {
-    const revealElements = Array.from(document.querySelectorAll<HTMLElement>('[data-about-reveal]'));
-    if (revealElements.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-          }
-        });
-      },
-      { threshold: 0.18, rootMargin: '0px 0px -8% 0px' }
-    );
-
-    revealElements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, []);
+  useScrollFx();
+  useRevealOnScroll();
 
   useEffect(() => {
     const section = statsRef.current;
@@ -123,293 +99,197 @@ function AboutContent() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-motion-card]'));
-    if (cards.length === 0) return;
-
-    const handleMove = (event: Event) => {
-      const target = event.currentTarget as HTMLElement;
-      const mouseEvent = event as MouseEvent;
-      const rect = target.getBoundingClientRect();
-      const x = mouseEvent.clientX - rect.left;
-      const y = mouseEvent.clientY - rect.top;
-      const nx = x / rect.width - 0.5;
-      const ny = y / rect.height - 0.5;
-
-      target.style.setProperty('--card-rotate-x', `${(ny * -10).toFixed(2)}deg`);
-      target.style.setProperty('--card-rotate-y', `${(nx * 12).toFixed(2)}deg`);
-      target.style.setProperty('--card-shift-x', `${(nx * 10).toFixed(2)}px`);
-      target.style.setProperty('--card-shift-y', `${(ny * 10).toFixed(2)}px`);
-      target.style.setProperty('--card-glow-x', `${(x / rect.width) * 100}%`);
-      target.style.setProperty('--card-glow-y', `${(y / rect.height) * 100}%`);
-    };
-
-    const handleLeave = (event: Event) => {
-      const target = event.currentTarget as HTMLElement;
-      target.style.setProperty('--card-rotate-x', '0deg');
-      target.style.setProperty('--card-rotate-y', '0deg');
-      target.style.setProperty('--card-shift-x', '0px');
-      target.style.setProperty('--card-shift-y', '0px');
-      target.style.setProperty('--card-glow-x', '50%');
-      target.style.setProperty('--card-glow-y', '50%');
-    };
-
-    cards.forEach((card) => {
-      card.addEventListener('mousemove', handleMove);
-      card.addEventListener('mouseleave', handleLeave);
-    });
-
-    return () => {
-      cards.forEach((card) => {
-        card.removeEventListener('mousemove', handleMove);
-        card.removeEventListener('mouseleave', handleLeave);
-      });
-    };
-  }, []);
+  const activeStep = FLOW_STEPS.find((step) => step.id === activeFlow) ?? FLOW_STEPS[0];
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <section className="about-hero-v2 reveal-block is-visible">
-        <div className="about-hero-v2-media">
+      {/* Hero */}
+      <section className="pt-24 sm:pt-32 pb-8 px-5 sm:px-6 text-center">
+        <div className="max-w-4xl mx-auto">
+          <p className="ap-eyebrow ap-rise" style={{ animationDelay: '60ms' }}>Sobre nosotros</p>
+          <h1 className="ap-headline ap-rise mt-3" style={{ animationDelay: '140ms' }}>
+            Ingenieria ganadera aplicada.
+          </h1>
+          <p className="ap-sub ap-rise mt-5 max-w-2xl mx-auto" style={{ animationDelay: '240ms' }}>
+            Tecnologia, soporte experto y criterio comercial para operaciones ganaderas
+            que necesitan moverse con precision.
+          </p>
+          <div className="ap-rise mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-7" style={{ animationDelay: '340ms' }}>
+            <Link href="/store">
+              <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-[1.03] active:scale-95">
+                Explorar catalogo
+              </Button>
+            </Link>
+            <Link href="/contacto" className="ap-link text-base">
+              Agendar asesoria
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Video en marco con scroll-zoom */}
+      <section className="px-4 sm:px-6 pb-16 sm:pb-24">
+        <div
+          data-scrollfx
+          className="ap-media-zoom relative max-w-6xl mx-auto aspect-[16/10] sm:aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl shadow-black/15 bg-muted"
+        >
           <video
-            className="about-hero-v2-video"
+            className="ap-media-inner absolute inset-0 w-full h-full object-cover"
             autoPlay
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="none"
             aria-hidden="true"
-            poster="/hero-agro.jpg"
+            poster="/1.png"
           >
             <source src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 991px)" />
             <source src="/videodefondosobrenosotros.mp4" type="video/mp4" />
           </video>
-        </div>
-        <div className="about-hero-v2-overlay" />
-        <div className="about-hero-v2-grid">
-          <div className="about-hero-v2-copy">
-            <div className="about-kicker-pill">
-              <PlayCircle className="h-4 w-4" />
-              <span>Ingenieria ganadera aplicada</span>
-            </div>
-            <h1>Sobre nuestra empresa</h1>
-            <p>
-              Tecnologia, soporte experto y criterio comercial para operaciones
-              ganaderas que necesitan moverse con precision.
-            </p>
-            <div className="about-hero-v2-actions">
-              <Link href="/store">
-                <Button className="premium-button about-primary-cta">Explorar catalogo</Button>
-              </Link>
-              <Link href="/contacto">
-                <Button variant="outline" className="premium-button about-secondary-cta">
-                  Agendar asesoria
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="about-hero-v2-panel" data-motion-card>
-            <p className="about-panel-kicker">Panel operativo</p>
-            <div className="about-panel-matrix">
-              <div>
-                <strong>24/7</strong>
-                <span>acompanamiento</span>
-              </div>
-              <div>
-                <strong>+5</strong>
-                <span>zonas activas</span>
-              </div>
-              <div>
-                <strong>100%</strong>
-                <span>enfoque consultivo</span>
-              </div>
-              <div>
-                <strong>360</strong>
-                <span>vision operativa</span>
-              </div>
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+          <div className="absolute bottom-0 inset-x-0 p-7 sm:p-12">
+            <p className="text-white/75 text-sm font-semibold mb-2">Nuestra razon de ser</p>
+            <h2 className="text-white text-2xl sm:text-4xl font-bold tracking-tight max-w-xl text-balance">
+              Ayudamos a operar mejor, con criterio real de campo.
+            </h2>
           </div>
         </div>
       </section>
 
-      <section className="about-mission-v2 reveal-block is-visible" data-about-reveal>
-        <div className="about-section-grid">
-          <div className="about-mission-copy">
-            <span className="about-section-label">Nuestra razon de ser</span>
-            <h2>Ingenieria ganadera de precision</h2>
-            <p>
-              En Rockink IMM ayudamos a productores y empresas a operar mejor,
-              con tecnologia, equipamiento e insumos tecnicos de alto
-              rendimiento.
+      {/* Mision */}
+      <section data-reveal className="reveal-block py-16 sm:py-24 px-4 sm:px-6 bg-muted">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+          <div>
+            <p className="ap-eyebrow">Nuestra mision</p>
+            <h2 className="ap-title2 mt-3">Ingenieria ganadera de precision.</h2>
+            <p className="ap-sub mt-5 text-base sm:text-lg">
+              En Rockink IMM ayudamos a productores y empresas a operar mejor, con tecnologia,
+              equipamiento e insumos tecnicos de alto rendimiento.
             </p>
-            <p>
-              Nuestro enfoque combina seleccion tecnica, soporte comercial y
-              acompanamiento para mejorar productividad, bienestar animal y
-              eficiencia operativa.
+            <p className="ap-sub mt-4 text-base sm:text-lg">
+              Nuestro enfoque combina seleccion tecnica, soporte comercial y acompanamiento para
+              mejorar productividad, bienestar animal y eficiencia operativa.
             </p>
           </div>
 
-          <div className="about-mission-stack">
-            <article className="about-wire-card" data-about-reveal data-motion-card>
-              <span className="about-wire-line" />
-              <h3>Precision</h3>
-              <p>Seleccion tecnica de productos para resultados consistentes.</p>
-            </article>
-            <article className="about-wire-card" data-about-reveal data-motion-card>
-              <span className="about-wire-line" />
-              <h3>Sostenibilidad</h3>
-              <p>Operacion responsable, eficiente y orientada a continuidad.</p>
-            </article>
-            <article className="about-wire-card" data-about-reveal data-motion-card>
-              <span className="about-wire-line" />
-              <h3>Velocidad</h3>
-              <p>Respuesta comercial agil para operaciones que no pueden esperar.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="about-flow-v2 reveal-block is-visible" data-about-reveal>
-        <div className="about-section-head">
-          <span className="about-section-label">Ruta de valor</span>
-          <h2>Como trabajamos contigo</h2>
-        </div>
-        <div className="about-flow-tabs">
-          {FLOW_STEPS.map((step) => (
-            <button
-              key={step.id}
-              type="button"
-              className={activeFlow === step.id ? 'is-active' : ''}
-              onClick={() => setActiveFlow(step.id)}
-            >
-              {step.title}
-            </button>
-          ))}
-        </div>
-        <div className="about-flow-panel">
-          {FLOW_STEPS.map((step) =>
-            step.id === activeFlow ? (
-              <div key={step.id}>
-                <h3>{step.title}</h3>
-                <p>{step.desc}</p>
-              </div>
-            ) : null
-          )}
-        </div>
-      </section>
-
-      <section className="about-values-v2 reveal-block is-visible" data-about-reveal>
-        <div className="about-section-head dark">
-          <span className="about-section-label">Valores</span>
-          <h2>Nuestros valores clave</h2>
-          <p>Base tecnica y humana para crecer con nuestros clientes.</p>
-        </div>
-        <div className="about-values-grid">
-          {VALUE_CARDS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article key={item.title} className="about-value-card-v2" data-about-reveal data-motion-card>
-                <div className="about-value-icon">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
+          <div className="grid gap-4">
+            {PILLARS.map((item, idx) => (
+              <article
+                key={item.title}
+                className="ap-card reveal-stagger p-6 sm:p-7"
+                style={{ '--stagger': `${idx * 110}ms` } as CSSProperties}
+              >
+                <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
               </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="about-stats-v2 reveal-block is-visible" ref={statsRef} data-about-reveal>
-        <article data-motion-card>
-          <MapPin className="h-5 w-5" />
-          <strong>{stats.departamentos}+</strong>
-          <span>Departamentos atendidos</span>
-        </article>
-        <article data-motion-card>
-          <ShieldCheck className="h-5 w-5" />
-          <strong>{stats.garantia}%</strong>
-          <span>Garantia tecnica</span>
-        </article>
-        <article data-motion-card>
-          <Zap className="h-5 w-5" />
-          <strong>{stats.optimizacion}%</strong>
-          <span>Optimizacion de procesos</span>
-        </article>
-      </section>
-
-      <section className="about-cta-v2 reveal-block is-visible" data-about-reveal>
-        <div className="about-cta-v2-inner">
-          <h2>Transforma tu operacion ganadera</h2>
-          <p>Activa un flujo comercial y tecnico mas claro para tu negocio.</p>
-          <Link href="/store">
-            <Button className="premium-button about-primary-cta">Explorar productos ahora</Button>
-          </Link>
-        </div>
-      </section>
-
-      <footer className="bg-foreground text-primary-foreground py-12 sm:py-16 px-4 sm:px-6 md:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 sm:gap-12 mb-12 sm:mb-16">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <img src="/logoempresa.png" alt="Rockink IMM" className="w-8 h-8" />
-                <span className="font-bold text-xl text-white">Rockink IMM</span>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Soluciones de ingenieria ganadera enfocadas en productividad,
-                bienestar animal e innovacion continua.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Productos</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/store" className="hover:text-primary transition">Catalogo Completo</a></li>
-                <li><a href="/store#categories" className="hover:text-primary transition">Categorias</a></li>
-                <li><a href="/about" className="hover:text-primary transition">Sobre Nosotros</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Soporte</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/contacto" className="hover:text-primary transition">Centro de Ayuda</a></li>
-                <li><a href="/contacto#faq" className="hover:text-primary transition">Preguntas Frecuentes</a></li>
-                <li><a href="/contacto" className="hover:text-primary transition">Contactanos</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Legal</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/privacidad" className="hover:text-primary transition">Privacidad</a></li>
-                <li><a href="/terminos" className="hover:text-primary transition">Terminos</a></li>
-                <li><a href="/cookies" className="hover:text-primary transition">Cookies</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Contacto</h4>
-              <p className="text-gray-400 text-sm mb-2">contacto@rockinkimm.com</p>
-              <p className="text-gray-400 text-sm mb-4">+51 962838329</p>
-              <div className="flex gap-3">
-                <a href="https://www.facebook.com/rockinkperu" target="_blank" rel="noreferrer" className="w-10 h-10 bg-primary/20 hover:bg-primary rounded-full flex items-center justify-center transition"><span className="text-xs">FB</span></a>
-                <a href="https://www.instagram.com/rockink_imm/" target="_blank" rel="noreferrer" className="w-10 h-10 bg-primary/20 hover:bg-primary rounded-full flex items-center justify-center transition"><span className="text-xs">IG</span></a>
-                <a href="https://www.tiktok.com/@rockinkimm" target="_blank" rel="noreferrer" className="w-10 h-10 bg-primary/20 hover:bg-primary rounded-full flex items-center justify-center transition"><span className="text-xs">TT</span></a>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-700 pt-8 text-center">
-            <p className="text-gray-400 text-sm">© 2026 Rockink IMM. Todos los derechos reservados.</p>
-            <p className="text-gray-500 text-xs mt-2">Transformando la ingenieria ganadera con innovacion y calidad</p>
+            ))}
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Flujo de trabajo */}
+      <section data-reveal className="reveal-block py-16 sm:py-24 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="ap-eyebrow">Ruta de valor</p>
+          <h2 className="ap-title2 mt-3 mb-8">Como trabajamos contigo.</h2>
+
+          <div className="ap-segment mb-8">
+            {FLOW_STEPS.map((step) => (
+              <button
+                key={step.id}
+                type="button"
+                className={activeFlow === step.id ? 'is-active' : ''}
+                onClick={() => setActiveFlow(step.id)}
+              >
+                {step.title}
+              </button>
+            ))}
+          </div>
+
+          <div className="ap-card p-8 sm:p-12 text-left">
+            <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-3">{activeStep.title}</h3>
+            <p className="text-muted-foreground leading-relaxed text-base sm:text-lg">{activeStep.desc}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Valores */}
+      <section data-reveal className="reveal-block py-16 sm:py-24 px-4 sm:px-6 bg-muted">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="ap-eyebrow">Valores</p>
+            <h2 className="ap-title2 mt-3">Nuestros valores clave.</h2>
+            <p className="ap-sub mt-4 max-w-2xl mx-auto text-base sm:text-lg">
+              Base tecnica y humana para crecer con nuestros clientes.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {VALUE_CARDS.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <article
+                  key={item.title}
+                  className="ap-card reveal-stagger p-7"
+                  style={{ '--stagger': `${idx * 100}ms` } as CSSProperties}
+                >
+                  <div className="ap-icon mb-5">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Cifras */}
+      <section data-reveal className="reveal-block py-16 sm:py-24 px-4 sm:px-6">
+        <div ref={statsRef} className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-10 text-center">
+          <div>
+            <MapPin className="w-5 h-5 text-primary mx-auto mb-3" />
+            <p className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">{stats.departamentos}+</p>
+            <p className="mt-2 text-sm text-muted-foreground font-medium">Departamentos atendidos</p>
+          </div>
+          <div>
+            <ShieldCheck className="w-5 h-5 text-primary mx-auto mb-3" />
+            <p className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">{stats.garantia}%</p>
+            <p className="mt-2 text-sm text-muted-foreground font-medium">Garantia tecnica</p>
+          </div>
+          <div>
+            <Zap className="w-5 h-5 text-primary mx-auto mb-3" />
+            <p className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">{stats.optimizacion}%</p>
+            <p className="mt-2 text-sm text-muted-foreground font-medium">Optimizacion de procesos</p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section data-reveal className="reveal-block py-20 sm:py-28 px-4 sm:px-6 text-center bg-muted">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="ap-title2">Transforma tu operacion ganadera.</h2>
+          <p className="ap-sub mt-4 mb-9 max-w-xl mx-auto text-base sm:text-lg">
+            Activa un flujo comercial y tecnico mas claro para tu negocio.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-7">
+            <Link href="/store">
+              <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-[1.03] active:scale-95">
+                Explorar productos
+              </Button>
+            </Link>
+            <Link href="/contacto" className="ap-link text-base">
+              Hablar con un asesor
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

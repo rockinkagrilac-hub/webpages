@@ -1,234 +1,114 @@
 'use client';
 
-import Link from "next/link"
-import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
-import { Brand, DEFAULT_BRANDS, HeroSlide, DEFAULT_HERO_SLIDES } from '@/lib/data';
+import { FaqAccordion } from '@/components/faq-accordion';
+import { SocialIcon, SOCIAL_LINKS } from '@/components/social-icon';
+import { Brand, DEFAULT_BRANDS } from '@/lib/data';
 import { normalizeBrandName } from '@/lib/product-brand';
 import { CartProvider } from '@/lib/cart-context';
-import { ArrowRight, Truck, ShieldCheck, Sparkles, MessagesSquare } from 'lucide-react';
+import { useScrollFx, useRevealOnScroll } from '@/lib/use-scroll-fx';
+import {
+  IMAGES,
+  HERO,
+  SHOWCASE,
+  STATS,
+  SERVICES,
+  PROCESS,
+  PROJECTS,
+  PARTNERSHIP_NOTE,
+  CERTIFICATIONS,
+  POSTS,
+  FAQS,
+  CONTACT,
+} from '@/lib/home-content';
+import {
+  ArrowRight,
+  BadgeCheck,
+  ChevronDown,
+  ChevronRight,
+  ClipboardCheck,
+  Dna,
+  Droplets,
+  LifeBuoy,
+  Mail,
+  MapPin,
+  Scissors,
+  ShieldCheck,
+  Thermometer,
+  Truck,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react';
 
-type IntroStage = 'logo' | 'cow' | 'reveal';
-
-type Point = { x: number; y: number };
-
-const TOTAL_INTRO_DURATION = 6000;
-const LOGO_STAGE_END = 2000;
-const COW_STAGE_END = 4200;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const easeInOut = (t: number) => t * t * (3 - 2 * t);
-
-const sampleLine = (from: Point, to: Point, count: number): Point[] => {
-  const points: Point[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const t = i / Math.max(1, count - 1);
-    points.push({
-      x: lerp(from.x, to.x, t),
-      y: lerp(from.y, to.y, t),
-    });
-  }
-  return points;
+/** Los nombres de icono viven en lib/home-content.ts; aqui se resuelven al componente. */
+const ICONS: Record<string, LucideIcon> = {
+  Droplets,
+  Dna,
+  Scissors,
+  Wrench,
+  ClipboardCheck,
+  Truck,
+  ShieldCheck,
+  BadgeCheck,
+  Thermometer,
+  LifeBuoy,
 };
 
-const sampleCircle = (center: Point, radius: number, count: number): Point[] => {
-  const points: Point[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const angle = (Math.PI * 2 * i) / count;
-    points.push({
-      x: center.x + Math.cos(angle) * radius,
-      y: center.y + Math.sin(angle) * radius,
-    });
-  }
-  return points;
-};
-
-const createRingPoints = (count: number, radius = 0.22): Point[] => {
-  const points: Point[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const a = (Math.PI * 2 * i) / count;
-    points.push({ x: Math.cos(a) * radius, y: Math.sin(a) * radius });
-  }
-  return points;
-};
-
-const createEyePoints = (): Point[] => {
-  const points: Point[] = [];
-  // Contorno del ojo
-  points.push(...sampleLine({ x: -0.32, y: 0 }, { x: -0.16, y: -0.12 }, 30));
-  points.push(...sampleLine({ x: -0.16, y: -0.12 }, { x: 0.16, y: -0.12 }, 34));
-  points.push(...sampleLine({ x: 0.16, y: -0.12 }, { x: 0.32, y: 0 }, 30));
-  points.push(...sampleLine({ x: 0.32, y: 0 }, { x: 0.16, y: 0.12 }, 30));
-  points.push(...sampleLine({ x: 0.16, y: 0.12 }, { x: -0.16, y: 0.12 }, 34));
-  points.push(...sampleLine({ x: -0.16, y: 0.12 }, { x: -0.32, y: 0 }, 30));
-  // Pupila
-  points.push(...sampleCircle({ x: 0, y: 0 }, 0.08, 32));
-  points.push(...sampleCircle({ x: 0, y: 0 }, 0.045, 18));
-  return points;
-};
-
-const INTRO_POINT_COUNT = 240;
-
-const sampleRect = (center: Point, width: number, height: number, count: number): Point[] => {
-  const points: Point[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const t = i / Math.max(1, count - 1);
-    const x = center.x + (t - 0.5) * width;
-    const y = center.y + (Math.sin(t * Math.PI) - 0.5) * height;
-    points.push({ x, y });
-  }
-  return points;
-};
-
-const createTreePoints = (): Point[] => {
-  const points: Point[] = [];
-  // Emblema general: anillo + hoja central
-  points.push(...sampleCircle({ x: 0, y: -0.1 }, 0.32, 90));
-  points.push(...sampleCircle({ x: 0, y: -0.1 }, 0.22, 64));
-
-  // Hoja estilizada (izq/der)
-  points.push(...sampleLine({ x: 0, y: -0.28 }, { x: -0.12, y: -0.1 }, 22));
-  points.push(...sampleLine({ x: 0, y: -0.28 }, { x: 0.12, y: -0.1 }, 22));
-  points.push(...sampleLine({ x: -0.12, y: -0.1 }, { x: 0, y: 0.02 }, 20));
-  points.push(...sampleLine({ x: 0.12, y: -0.1 }, { x: 0, y: 0.02 }, 20));
-
-  // Semilla central
-  points.push(...sampleCircle({ x: 0, y: -0.05 }, 0.06, 24));
-
-  return points;
-};
-
-const LOGO_POINTS: Point[] = createTreePoints();
-const BULL_NODES = [
-  { x: 0.18, y: 0.45 },
-  { x: 0.26, y: 0.34 },
-  { x: 0.34, y: 0.3 },
-  { x: 0.45, y: 0.28 },
-  { x: 0.56, y: 0.3 },
-  { x: 0.68, y: 0.32 },
-  { x: 0.78, y: 0.34 },
-  { x: 0.85, y: 0.42 },
-  { x: 0.75, y: 0.52 },
-  { x: 0.64, y: 0.57 },
-  { x: 0.52, y: 0.58 },
-  { x: 0.4, y: 0.58 },
-  { x: 0.3, y: 0.56 },
-  { x: 0.2, y: 0.53 },
-];
+function animateCount(target: number, duration: number, onTick: (value: number) => void) {
+  const start = performance.now();
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / duration);
+    onTick(Math.floor(target * (1 - Math.pow(1 - t, 3))));
+    if (t < 1) window.requestAnimationFrame(step);
+  };
+  window.requestAnimationFrame(step);
+}
 
 function HomeContent() {
   const [brands, setBrands] = useState<Brand[]>(DEFAULT_BRANDS);
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
-  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [stats, setStats] = useState({ products: 0, clients: 0, service: 0 });
-  const [isClientReady, setIsClientReady] = useState(false);
-  const [introVisible, setIntroVisible] = useState(true);
-  const [introExiting, setIntroExiting] = useState(false);
-  const [introStage, setIntroStage] = useState<IntroStage>('logo');
-  const [activeControl, setActiveControl] = useState<'productos' | 'clientes' | 'soporte' | null>(null);
-  const [activeSection, setActiveSection] = useState('hero');
-  const [kineticBoost, setKineticBoost] = useState(0);
-  const heroParallaxRef = useRef<HTMLElement | null>(null);
-  const particlesRef = useRef<HTMLDivElement | null>(null);
+  const [counters, setCounters] = useState<number[]>(() => STATS.map(() => 0));
+  const [statsVisible, setStatsVisible] = useState(false);
+  const [headerDark, setHeaderDark] = useState(true);
+
+  const heroRef = useRef<HTMLElement | null>(null);
   const statsRef = useRef<HTMLDivElement | null>(null);
-  const homeRootRef = useRef<HTMLDivElement | null>(null);
-  const brandsSectionRef = useRef<HTMLElement | null>(null);
-  const introOverlayRef = useRef<HTMLDivElement | null>(null);
-  const introCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const introBullImageRef = useRef<HTMLImageElement | null>(null);
-  const introBullPreparedRef = useRef<HTMLCanvasElement | null>(null);
-  const introBullLoadedRef = useRef(false);
-  const introExitScheduledRef = useRef(false);
-  const scrollTrackerRef = useRef({ y: 0, t: 0 });
-  const scrollRafRef = useRef<number>(0);
-  const pendingScrollYRef = useRef(0);
-  const [brandsCascadeActive, setBrandsCascadeActive] = useState(false);
-  const scrollDirectionRef = useRef<'up' | 'down'>('down');
 
-  const loadHomepageData = async () => {
-    try {
-      const configRes = await fetch('/api/site-config', { cache: 'no-store' });
+  useScrollFx();
+  useRevealOnScroll();
 
-      if (configRes.ok) {
-        const config = (await configRes.json()) as {
-          brands?: Brand[];
-          heroSlides?: HeroSlide[];
-        };
-        setBrands(Array.isArray(config.brands) && config.brands.length > 0 ? config.brands : DEFAULT_BRANDS);
-        setHeroSlides(
-          Array.isArray(config.heroSlides) && config.heroSlides.length > 0
-            ? config.heroSlides
-            : DEFAULT_HERO_SLIDES
-        );
-      } else {
-        setBrands(DEFAULT_BRANDS);
-        setHeroSlides(DEFAULT_HERO_SLIDES);
-      }
-    } catch (e) {
-      setBrands(DEFAULT_BRANDS);
-      setHeroSlides(DEFAULT_HERO_SLIDES);
-    }
-  };
-
+  /* ---------- Marcas reales desde la configuracion del sitio ---------- */
   useEffect(() => {
-    void loadHomepageData();
+    const controller = new AbortController();
 
-    // Sincronizar cambios hechos en otras pestaÃƒÂ±as/ventanas y al volver a foco
-    const handleStorage = () => void loadHomepageData();
-    const handleFocus = () => void loadHomepageData();
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('focus', handleFocus);
+    const loadBrands = async () => {
+      try {
+        const res = await fetch('/api/site-config', { cache: 'no-store', signal: controller.signal });
+        if (!res.ok) return;
+        const config = (await res.json()) as { brands?: Brand[] };
+        if (Array.isArray(config.brands) && config.brands.length > 0) {
+          setBrands(config.brands);
+        }
+      } catch {
+        /* se mantienen las marcas por defecto */
+      }
     };
+
+    void loadBrands();
+    return () => controller.abort();
   }, []);
 
+  /* ---------- Header: oscuro sobre el hero, claro al salir de el ---------- */
   useEffect(() => {
-    setIsClientReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (heroSlides.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentHeroIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [heroSlides.length]);
-
-  useEffect(() => {
-    if (currentHeroIndex >= heroSlides.length) {
-      setCurrentHeroIndex(0);
-    }
-  }, [currentHeroIndex, heroSlides.length]);
-
-  useEffect(() => {
-    const applyScrollState = () => {
-      scrollRafRef.current = 0;
-      const now = performance.now();
-      const y = pendingScrollYRef.current;
-      const dy = y - scrollTrackerRef.current.y;
-      const direction = dy >= 0 ? 'down' : 'up';
-      if (scrollDirectionRef.current !== direction) {
-        scrollDirectionRef.current = direction;
-      }
-      const dt = Math.max(16, now - scrollTrackerRef.current.t);
-      const velocity = Math.min(1, Math.abs(dy / dt) * 2.2);
-      setKineticBoost((prev) => (Math.abs(prev - velocity) > 0.02 ? velocity : prev));
-      scrollTrackerRef.current = { y, t: now };
-
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = Math.max(0, Math.min(1, max > 0 ? y / max : 0));
-      setScrollProgress((prev) => (Math.abs(prev - progress) > 0.0015 ? progress : prev));
-    };
+    const hero = heroRef.current;
+    if (!hero) return;
 
     const onScroll = () => {
-      pendingScrollYRef.current = window.scrollY;
-      if (scrollRafRef.current) return;
-      scrollRafRef.current = window.requestAnimationFrame(applyScrollState);
+      setHeaderDark(window.scrollY < hero.offsetHeight - 80);
     };
 
     onScroll();
@@ -237,384 +117,18 @@ function HomeContent() {
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
-      if (scrollRafRef.current) {
-        window.cancelAnimationFrame(scrollRafRef.current);
-      }
     };
   }, []);
 
-  useEffect(() => {
-    const overlay = introOverlayRef.current;
-    const canvas = introCanvasRef.current;
-    if (!overlay || !canvas) return;
-
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) {
-      setIntroVisible(false);
-      return;
-    }
-
-    const ctx = canvas.getContext('2d', { alpha: true });
-    if (!ctx) {
-      setIntroVisible(false);
-      return;
-    }
-
-    const bullImage = new Image();
-    bullImage.src = '/toro-intro.png';
-    bullImage.onload = () => {
-      introBullImageRef.current = bullImage;
-      introBullLoadedRef.current = true;
-      // Prepara una version sin fondo oscuro para la escena cinematica.
-      const prepCanvas = document.createElement('canvas');
-      prepCanvas.width = bullImage.naturalWidth;
-      prepCanvas.height = bullImage.naturalHeight;
-      const prepCtx = prepCanvas.getContext('2d');
-      if (prepCtx) {
-        prepCtx.drawImage(bullImage, 0, 0);
-        const imageData = prepCtx.getImageData(0, 0, prepCanvas.width, prepCanvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const a = data[i + 3];
-          const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          if (luma < 36) {
-            data[i + 3] = 0;
-            continue;
-          }
-          const boost = Math.min(255, Math.round(210 + luma * 0.22));
-          data[i] = boost;
-          data[i + 1] = boost;
-          data[i + 2] = boost;
-          data[i + 3] = a;
-        }
-        prepCtx.putImageData(imageData, 0, 0);
-        introBullPreparedRef.current = prepCanvas;
-      } else {
-        introBullPreparedRef.current = null;
-      }
-    };
-    bullImage.onerror = () => {
-      introBullImageRef.current = null;
-      introBullPreparedRef.current = null;
-      introBullLoadedRef.current = false;
-    };
-
-    const resizeCanvas = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rect = overlay.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-      canvas.style.width = `${Math.floor(rect.width)}px`;
-      canvas.style.height = `${Math.floor(rect.height)}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    let start = performance.now();
-    const cycleDuration = TOTAL_INTRO_DURATION;
-    let raf = 0;
-    let lastStage: IntroStage = 'logo';
-
-    const draw = (now: number) => {
-      const elapsed = (now - start) % cycleDuration;
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      const cx = width / 2;
-      const cy = height / 2;
-      const scale = Math.min(width, height) * 0.8;
-
-      let stage: IntroStage = 'logo';
-      if (elapsed >= LOGO_STAGE_END && elapsed < COW_STAGE_END) stage = 'cow';
-      if (elapsed >= COW_STAGE_END) stage = 'reveal';
-
-      if (stage !== lastStage) {
-        setIntroStage(stage);
-        lastStage = stage;
-      }
-
-      const stageProgress =
-        stage === 'logo'
-          ? Math.max(0, Math.min(1, elapsed / LOGO_STAGE_END))
-          : stage === 'cow'
-          ? Math.max(0, Math.min(1, (elapsed - LOGO_STAGE_END) / (COW_STAGE_END - LOGO_STAGE_END)))
-          : Math.max(0, Math.min(1, (elapsed - COW_STAGE_END) / (TOTAL_INTRO_DURATION - COW_STAGE_END)));
-
-      overlay.style.setProperty('--intro-t', (elapsed / TOTAL_INTRO_DURATION).toFixed(4));
-      overlay.style.setProperty('--intro-reveal', stage === 'reveal' ? stageProgress.toFixed(4) : '0');
-
-      ctx.clearRect(0, 0, width, height);
-
-      const fog = ctx.createRadialGradient(cx, cy, scale * 0.08, cx, cy, scale * 0.6);
-      fog.addColorStop(0, 'rgba(16,185,129,0.18)');
-      fog.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = fog;
-      ctx.fillRect(0, 0, width, height);
-
-      const drift = stage === 'logo' ? 0 : stage === 'cow' ? easeInOut(stageProgress) : 1;
-      const burst = stage === 'reveal' ? easeInOut(stageProgress) : 0;
-       // Parpadeo suave del ojo en la fase inicial.
-      const blinkPhase = stage === 'logo' ? Math.sin((elapsed / LOGO_STAGE_END) * Math.PI) : 0;
-      const blinkScale = stage === 'logo' ? 0.55 + 0.45 * Math.abs(Math.cos(blinkPhase * 0.7)) : 1;
-      const bullVisibility =
-        stage === 'logo'
-          ? 0
-          : stage === 'cow'
-          ? 0.2 + easeInOut(stageProgress) * 0.8
-          : Math.max(0, 1 - burst * 0.92);
-      const scanProgress =
-        stage === 'cow'
-          ? stageProgress
-          : stage === 'reveal'
-          ? 1
-          : 0;
-
-      if (introBullLoadedRef.current && introBullImageRef.current && bullVisibility > 0.02) {
-        const image = introBullPreparedRef.current ?? introBullImageRef.current;
-        const imageW = image instanceof HTMLCanvasElement ? image.width : image.naturalWidth;
-        const imageH = image instanceof HTMLCanvasElement ? image.height : image.naturalHeight;
-        const baseW = Math.min(width * 0.64, 620);
-        const ratio = imageH > 0 ? imageW / imageH : 1.6;
-        const drawW = baseW;
-        const drawH = drawW / Math.max(0.5, ratio);
-        const drawX = cx - drawW / 2;
-        const verticalLift = stage === 'cow' ? (1 - stageProgress) * 24 : 0;
-        const drawY = cy - drawH / 2 - verticalLift;
-
-        ctx.save();
-        ctx.globalAlpha = Math.min(1, bullVisibility);
-        ctx.filter = `drop-shadow(0 0 14px rgba(134,239,172,0.78)) drop-shadow(0 0 30px rgba(34,197,94,0.58))`;
-        ctx.drawImage(image, drawX, drawY, drawW, drawH);
-
-        if (scanProgress > 0.02) {
-          const scanY = drawY + drawH * ((scanProgress * 1.2) % 1);
-          const scanGrad = ctx.createLinearGradient(drawX, scanY - 14, drawX, scanY + 14);
-          scanGrad.addColorStop(0, 'rgba(52,211,153,0)');
-          scanGrad.addColorStop(0.5, `rgba(74,222,128,${(0.38 * bullVisibility).toFixed(3)})`);
-          scanGrad.addColorStop(1, 'rgba(52,211,153,0)');
-          ctx.fillStyle = scanGrad;
-          ctx.fillRect(drawX, scanY - 16, drawW, 32);
-        }
-
-        const nodeCount = BULL_NODES.length;
-        const pulse = 0.5 + Math.sin(elapsed * 0.012) * 0.5;
-        ctx.strokeStyle = `rgba(74,222,128,${(0.26 + pulse * 0.18).toFixed(3)})`;
-        ctx.lineWidth = 1;
-        ctx.shadowBlur = 0;
-        for (let n = 0; n < nodeCount; n += 1) {
-          const p = BULL_NODES[n];
-          const nx = drawX + drawW * p.x;
-          const ny = drawY + drawH * p.y;
-          const tx = nx + (n % 2 === 0 ? 26 : -26);
-          const ty = ny + (n % 3 === 0 ? -18 : 14);
-          ctx.beginPath();
-          ctx.moveTo(nx, ny);
-          ctx.lineTo(tx, ty);
-          ctx.stroke();
-          ctx.fillStyle = `rgba(167,243,208,${(0.42 + pulse * 0.45).toFixed(3)})`;
-          ctx.beginPath();
-          ctx.arc(nx, ny, 2.1 + (n % 3) * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-      }
-
-      for (let i = 0; i < INTRO_POINT_COUNT; i += 1) {
-        const lp = LOGO_POINTS[i % LOGO_POINTS.length];
-        let px = lp.x;
-        let py = lp.y * blinkScale;
-
-        if (drift > 0) {
-          const a = (Math.PI * 2 * i) / INTRO_POINT_COUNT + drift * 5;
-          px += Math.cos(a) * drift * 0.14;
-          py += Math.sin(a * 1.1) * drift * 0.1;
-        }
-
-        if (burst > 0) {
-          const a = (Math.PI * 2 * i) / INTRO_POINT_COUNT;
-          px += Math.cos(a) * burst * 0.2;
-          py += Math.sin(a) * burst * 0.16;
-        }
-
-        const size = 1.6 + (i % 4) * 0.45 + burst * 1.2;
-        const baseAlpha = Math.max(0, 0.82 - burst * 0.74);
-        const alpha = introBullLoadedRef.current && stage !== 'logo' ? baseAlpha * 0.68 : baseAlpha;
-        ctx.fillStyle = `rgba(74, 222, 128, ${alpha.toFixed(3)})`;
-        ctx.shadowBlur = 8 + (i % 3) * 4;
-        ctx.shadowColor = 'rgba(34,197,94,0.65)';
-        ctx.beginPath();
-        ctx.arc(cx + px * scale, cy + py * scale * 0.82, size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Mini HUD de progreso para reforzar la narrativa tecnica.
-      const hudW = Math.min(260, width * 0.42);
-      const hudX = cx - hudW / 2;
-      const hudY = Math.max(24, height * 0.82);
-      const totalProgress = Math.max(0, Math.min(1, elapsed / TOTAL_INTRO_DURATION));
-      const isExit = elapsed >= TOTAL_INTRO_DURATION - 600;
-      if (introExiting !== isExit) setIntroExiting(isExit);
-
-      raf = window.requestAnimationFrame(draw);
-    }
-
-    setIntroExiting(false);
-    introExitScheduledRef.current = false;
-    setIntroStage('logo');
-    raf = window.requestAnimationFrame(draw);
-
-    return () => {
-      window.cancelAnimationFrame(raf);
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!introVisible) return;
-    const timeout = window.setTimeout(() => {
-      setIntroVisible(false);
-    }, TOTAL_INTRO_DURATION + 800);
-    return () => window.clearTimeout(timeout);
-  }, [introVisible]);
-
-  useEffect(() => {
-    if (kineticBoost <= 0.03) return;
-    const timeout = window.setTimeout(() => {
-      setKineticBoost((prev) => {
-        const next = Math.max(0, prev * 0.78);
-        return Math.abs(next - prev) < 0.015 ? 0 : next;
-      });
-    }, 160);
-    return () => window.clearTimeout(timeout);
-  }, [kineticBoost]);
-
-  useEffect(() => {
-    const root = homeRootRef.current;
-    if (!root) return;
-    const finePointer = window.matchMedia('(pointer: fine)').matches;
-    if (!finePointer) return;
-
-    const onMove = (event: MouseEvent) => {
-      const rect = root.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * 100;
-      const y = ((event.clientY - rect.top) / rect.height) * 100;
-      root.style.setProperty('--spot-x', `${x.toFixed(2)}%`);
-      root.style.setProperty('--spot-y', `${y.toFixed(2)}%`);
-    };
-
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
-  }, []);
-
-  const playTechSound = (_type: 'click' | 'section') => {
-    return;
-  };
-
-  useEffect(() => {
-    const revealElements = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
-    if (revealElements.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const el = entry.target as HTMLElement;
-          const direction = scrollDirectionRef.current;
-          const viewport = window.innerHeight || 800;
-          const { top, bottom } = entry.boundingClientRect;
-
-          // Entrada en cualquier dirección
-          if (entry.isIntersecting) {
-            el.classList.add('is-visible');
-            el.classList.remove('is-exit');
-            playTechSound('section');
-            return;
-          }
-
-          // Despedida al desplazarse hacia arriba: el bloque se va por la parte inferior
-          if (direction === 'up' && top > viewport * 0.6) {
-            el.classList.add('is-exit');
-            el.classList.remove('is-visible');
-            return;
-          }
-
-          // Rearme cuando bajamos y el bloque quedó arriba fuera de la vista
-          if (direction === 'down' && bottom < viewport * 0.1) {
-            el.classList.remove('is-visible');
-            el.classList.remove('is-exit');
-          }
-        });
-      },
-      { threshold: 0.22, rootMargin: '-12% 0px -12% 0px' }
-    );
-
-    revealElements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const section = brandsSectionRef.current;
-    if (!section) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setBrandsCascadeActive(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-section-id]'));
-    if (nodes.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const sectionId = entry.target.getAttribute('data-section-id');
-            if (sectionId) setActiveSection(sectionId);
-          }
-        });
-      },
-      { threshold: 0.45, rootMargin: '-15% 0px -20% 0px' }
-    );
-
-    nodes.forEach((n) => observer.observe(n));
-    return () => observer.disconnect();
-  }, []);
-
+  /* ---------- Contadores: se disparan una sola vez al entrar en viewport ---------- */
   useEffect(() => {
     const section = statsRef.current;
     if (!section) return;
 
-    let hasRun = false;
-    const animateValue = (key: 'products' | 'clients' | 'service', target: number, duration: number) => {
-      let start = performance.now();
-      const step = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const eased = 1 - Math.pow(1 - t, 3);
-        setStats((prev) => ({ ...prev, [key]: Math.floor(target * eased) }));
-        if (t < 1) window.requestAnimationFrame(step);
-      };
-      window.requestAnimationFrame(step);
-    };
-
     const observer = new IntersectionObserver(
       (entries) => {
-        if (hasRun) return;
         if (entries.some((entry) => entry.isIntersecting)) {
-          hasRun = true;
-          animateValue('products', 1000, 1500);
-          animateValue('clients', 5000, 1500);
-          animateValue('service', 24, 1500);
+          setStatsVisible(true);
           observer.disconnect();
         }
       },
@@ -626,708 +140,522 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
-    const section = heroParallaxRef.current;
-    if (!section) return;
+    if (!statsVisible) return;
+    STATS.forEach((stat, index) => {
+      animateCount(stat.value, 1500, (value) =>
+        setCounters((prev) => {
+          if (prev[index] === value) return prev;
+          const next = [...prev];
+          next[index] = value;
+          return next;
+        })
+      );
+    });
+  }, [statsVisible]);
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const finePointer = window.matchMedia('(pointer: fine)').matches;
-    if (reduceMotion || !finePointer) return;
+  const marqueeItems = useMemo(() => {
+    const names = brands.map((brand) => normalizeBrandName(brand.name));
+    const base = names.length > 0 ? names : ['Lister', 'CRV', 'Melasty'];
+    return [...base, 'Rockink IMM', ...base, 'Ingenieria Ganadera'];
+  }, [brands]);
 
-    const layers = Array.from(section.querySelectorAll<HTMLElement>('[data-parallax-depth]')).map((el) => ({
-      el,
-      depth: Number(el.dataset.parallaxDepth ?? 0),
-      x: 0,
-      y: 0,
-      tx: 0,
-      ty: 0,
-    }));
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const name = String(data.get('name') || '').trim();
+    const phone = String(data.get('phone') || '').trim();
+    const message = String(data.get('message') || '').trim();
+    if (!name || !message) return;
 
-    if (layers.length === 0) return;
+    const text = encodeURIComponent(
+      [
+        'Hola Rockink IMM, quiero contactarme.',
+        `Nombre: ${name}`,
+        phone ? `Telefono: ${phone}` : '',
+        `Mensaje: ${message}`,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
 
-    let raf = 0;
-    let active = false;
-
-    const startAnimation = () => {
-      if (active) return;
-      active = true;
-      raf = window.requestAnimationFrame(animate);
-    };
-
-    const animate = () => {
-      let keepRunning = false;
-
-      layers.forEach((layer) => {
-        layer.x += (layer.tx - layer.x) * 0.1;
-        layer.y += (layer.ty - layer.y) * 0.1;
-
-        if (Math.abs(layer.tx - layer.x) > 0.04 || Math.abs(layer.ty - layer.y) > 0.04) {
-          keepRunning = true;
-        }
-
-        layer.el.style.transform = `translate3d(${layer.x.toFixed(2)}px, ${layer.y.toFixed(2)}px, 0)`;
-      });
-
-      if (keepRunning) {
-        raf = window.requestAnimationFrame(animate);
-      } else {
-        active = false;
-      }
-    };
-
-    const updateTarget = (clientX: number, clientY: number) => {
-      const rect = section.getBoundingClientRect();
-      const nx = (clientX - rect.left) / rect.width - 0.5;
-      const ny = (clientY - rect.top) / rect.height - 0.5;
-
-      layers.forEach((layer) => {
-        layer.tx = nx * layer.depth;
-        layer.ty = ny * layer.depth;
-      });
-
-      startAnimation();
-    };
-
-    const onMove = (event: MouseEvent) => updateTarget(event.clientX, event.clientY);
-    const onLeave = () => {
-      layers.forEach((layer) => {
-        layer.tx = 0;
-        layer.ty = 0;
-      });
-      startAnimation();
-    };
-
-    section.addEventListener('mousemove', onMove, { passive: true });
-    section.addEventListener('mouseleave', onLeave);
-
-    return () => {
-      section.removeEventListener('mousemove', onMove);
-      section.removeEventListener('mouseleave', onLeave);
-      window.cancelAnimationFrame(raf);
-      layers.forEach((layer) => {
-        layer.el.style.transform = 'translate3d(0, 0, 0)';
-      });
-    };
-  }, []);
-
-  useEffect(() => {
-    const section = heroParallaxRef.current;
-    const particlesLayer = particlesRef.current;
-    if (!section || !particlesLayer) return;
-
-    const finePointer = window.matchMedia('(pointer: fine)').matches;
-    if (!finePointer) return;
-
-    let raf = 0;
-    let tx = 0;
-    let ty = 0;
-    let x = 0;
-    let y = 0;
-
-    const animate = () => {
-      x += (tx - x) * 0.08;
-      y += (ty - y) * 0.08;
-      particlesLayer.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`;
-      raf = window.requestAnimationFrame(animate);
-    };
-
-    const onMove = (event: MouseEvent) => {
-      const rect = section.getBoundingClientRect();
-      const nx = (event.clientX - rect.left) / rect.width - 0.5;
-      const ny = (event.clientY - rect.top) / rect.height - 0.5;
-      tx = nx * 16;
-      ty = ny * 16;
-    };
-
-    raf = window.requestAnimationFrame(animate);
-    section.addEventListener('mousemove', onMove, { passive: true });
-    return () => {
-      section.removeEventListener('mousemove', onMove);
-      window.cancelAnimationFrame(raf);
-      particlesLayer.style.transform = 'translate3d(0, 0, 0)';
-    };
-  }, []);
-
-  const currentHeroSlide = heroSlides[currentHeroIndex] || {
-    id: 'hero-fallback',
-    url: '',
-    badge: 'Rockink IMM',
-    title: 'Ingenieria Ganadera de Alto Nivel',
-    description: 'Soluciones tecnicas, repuestos y soporte especializado para operaciones ganaderas.',
+    window.open(`https://wa.me/${CONTACT.whatsapp}?text=${text}`, '_blank');
+    form.reset();
   };
-  const homeBenefits = [
-    {
-      title: 'Asesoria personalizada',
-      description: 'Te ayudamos a elegir productos correctos para tu necesidad real.',
-      icon: MessagesSquare,
-    },
-    {
-      title: 'Calidad validada',
-      description: 'Trabajamos con marcas y lineas probadas en operaciones ganaderas.',
-      icon: ShieldCheck,
-    },
-    {
-      title: 'Atencion agil',
-      description: 'Canal rapido por WhatsApp para consultas y seguimiento.',
-      icon: Truck,
-    },
-  ];
-  const steps = [
-    { title: 'Explora el catalogo', description: 'Filtra por categoria, marca o texto en segundos.' },
-    { title: 'Compara y revisa', description: 'Mira fotos, video y especificaciones del producto.' },
-    { title: 'Contacta y cierra', description: 'Coordina por WhatsApp con atencion directa.' },
-  ];
-  const socialCards = [
-    {
-      name: 'Facebook',
-      href: 'https://www.facebook.com/rockinkperu',
-      logo: 'https://cdn.simpleicons.org/facebook/1877F2',
-      glow: 'rgba(24, 119, 242, 0.45)',
-    },
-    {
-      name: 'Instagram',
-      href: 'https://www.instagram.com/rockink_imm/',
-      logo: 'https://cdn.simpleicons.org/instagram/E4405F',
-      glow: 'rgba(228, 64, 95, 0.45)',
-    },
-    {
-      name: 'TikTok',
-      href: 'https://www.tiktok.com/@rockinkimm',
-      logo: 'https://cdn.simpleicons.org/tiktok/111111',
-      glow: 'rgba(17, 17, 17, 0.45)',
-    },
-  ];
-  const pollenParticles = useMemo(
-    () =>
-      Array.from({ length: 20 }).map((_, i) => {
-        const rx = (Math.sin(i * 12.73) + 1) / 2;
-        const ry = (Math.cos(i * 8.93) + 1) / 2;
-        const rs = (Math.sin(i * 3.11) + 1) / 2;
-        const rd = (Math.cos(i * 5.37) + 1) / 2;
-        return {
-          id: `p-${i}`,
-          left: `${8 + rx * 84}%`,
-          top: `${6 + ry * 86}%`,
-          size: 5 + rs * 11,
-          delay: `${(i % 6) * 0.45}s`,
-          duration: `${6 + rd * 6}s`,
-        };
-      }),
-    []
-  );
-
-  const handleBrandCardMove = (event: React.MouseEvent<HTMLElement>) => {
-    const el = event.currentTarget;
-    const rect = el.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const nx = x / rect.width - 0.5;
-    const ny = y / rect.height - 0.5;
-
-    const rotateX = ny * -24;
-    const rotateY = nx * 24;
-    const shiftX = nx * 22;
-    const shiftY = ny * 22;
-    const angle = Math.atan2(ny, nx) * (180 / Math.PI);
-
-    el.style.setProperty('--tilt-x', `${rotateX.toFixed(2)}deg`);
-    el.style.setProperty('--tilt-y', `${rotateY.toFixed(2)}deg`);
-    el.style.setProperty('--glow-x', `${(x / rect.width) * 100}%`);
-    el.style.setProperty('--glow-y', `${(y / rect.height) * 100}%`);
-    el.style.setProperty('--inner-shift-x', `${shiftX.toFixed(2)}px`);
-    el.style.setProperty('--inner-shift-y', `${shiftY.toFixed(2)}px`);
-    el.style.setProperty('--border-rotate', `${(angle + 180).toFixed(2)}deg`);
-
-  };
-
-  const handleBrandCardLeave = (event: React.MouseEvent<HTMLElement>) => {
-    const el = event.currentTarget;
-    el.style.setProperty('--tilt-x', '0deg');
-    el.style.setProperty('--tilt-y', '0deg');
-    el.style.setProperty('--glow-x', '50%');
-    el.style.setProperty('--glow-y', '50%');
-    el.style.setProperty('--inner-shift-x', '0px');
-    el.style.setProperty('--inner-shift-y', '0px');
-    el.style.setProperty('--border-rotate', '0deg');
-  };
-
-  const dashOffset = 760 - 760 * scrollProgress;
-  const sectionNavItems = [
-    { id: 'hero', label: 'Inicio' },
-    { id: 'brands', label: 'Marcas' },
-    { id: 'benefits', label: 'Beneficios' },
-    { id: 'flow', label: 'Proceso' },
-    { id: 'social', label: 'Redes' },
-    { id: 'cta', label: 'Contacto' },
-  ];
-  const interactionStyle = {
-    '--kinetic-boost': kineticBoost,
-  } as CSSProperties;
 
   return (
-    <div ref={homeRootRef} className="min-h-screen bg-background kinetic-stage" style={interactionStyle}>
-      {introVisible && (
-        <div
-          ref={introOverlayRef}
-          className={`cinematic-intro fixed inset-0 z-[90] ${introStage === 'reveal' ? 'is-reveal' : ''} ${introExiting ? 'is-exiting' : ''}`}
+    <div className="bg-background">
+      {/* Progreso de lectura: CSS puro con scroll timeline nativo, cero JavaScript */}
+      <div className="scroll-progress" aria-hidden="true">
+        <div className="scroll-progress-bar" />
+      </div>
+
+      <Header variant={headerDark ? 'dark' : 'light'} />
+
+      {/* ══ 1. HERO ══ Impacto: el video de operación real detiene el rebote */}
+      <section ref={heroRef} className="ap-hero ap-dark">
+        <video
+          className="ap-hero-media"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={IMAGES.heroPoster}
           aria-hidden="true"
         >
-          <div className="cinematic-grid" />
-          <div className="cinematic-flare cinematic-flare-left" />
-          <div className="cinematic-flare cinematic-flare-right" />
-          <canvas ref={introCanvasRef} className="cinematic-particles" />
-          <div className={`cinematic-logo ${introStage !== 'logo' ? 'is-hidden' : ''}`}>
-            <svg viewBox="0 0 760 180" role="presentation" className="cinematic-logo-svg">
-              <text x="50%" y="52%" textAnchor="middle" dominantBaseline="middle" className="cinematic-logo-stroke">
-                ROCKINK-IMM
-              </text>
-            </svg>
-            <div className="cinematic-logo-glow" />
-          </div>
-          <div className="cinematic-caption">
-            {introStage === 'logo' && <p>Origen Tecnologico</p>}
-            {introStage === 'cow' && <p>Transformacion Organica</p>}
-            {introStage === 'reveal' && <p>Revelacion Fluida</p>}
-          </div>
-          <div className="cinematic-liquid" />
-        </div>
-      )}
+          <source src="/hero-mobile.mp4" type="video/mp4" />
+        </video>
+        <div className="ap-hero-veil" />
 
-      <div className="organic-scroll-line pointer-events-none fixed left-2 sm:left-4 top-24 bottom-8 z-30 hidden md:block">
-        <svg viewBox="0 0 56 820" preserveAspectRatio="none" className="h-full w-12">
-          <path d="M28 4 C 20 80, 36 140, 28 210 C 18 300, 38 360, 28 440 C 18 530, 40 620, 28 720 C 22 770, 30 795, 28 816" stroke="rgba(22, 163, 74, 0.25)" strokeWidth="3" fill="none" />
-          <path
-            d="M28 4 C 20 80, 36 140, 28 210 C 18 300, 38 360, 28 440 C 18 530, 40 620, 28 720 C 22 770, 30 795, 28 816"
-            stroke="rgba(22, 163, 74, 1)"
-            strokeWidth="3.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray="760"
-            strokeDashoffset={dashOffset}
-            className="transition-all duration-300"
-          />
-        </svg>
-      </div>
-
-      <div className="section-command-center fixed right-4 top-1/2 -translate-y-1/2 z-40 hidden xl:flex">
-        <div className="section-command-shell">
-          <p className="section-command-label">Control de Flujo</p>
-          {sectionNavItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                const target = document.querySelector<HTMLElement>(`[data-section-id="${item.id}"]`);
-                if (target) {
-                  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  playTechSound('click');
-                }
-              }}
-              className={`section-command-item ${activeSection === item.id ? 'is-active' : ''}`}
+        <div className="ap-shell relative w-full pt-32 pb-28">
+          <div className="max-w-3xl">
+            <p className="ap-overline ap-rise" style={{ animationDelay: '80ms' }}>
+              {HERO.overline}
+            </p>
+            <h1 className="ap-display ap-rise mt-6 text-white" style={{ animationDelay: '180ms' }}>
+              {HERO.title}
+            </h1>
+            <p
+              className="ap-rise mt-6 max-w-xl text-lg sm:text-xl leading-relaxed text-white/70"
+              style={{ animationDelay: '280ms' }}
             >
-              <span className="section-command-dot" />
-              <span>{item.label}</span>
-            </button>
-          ))}
-          <div className="section-command-meter">
-            <div className="section-command-meter-bar" style={{ transform: `scaleX(${scrollProgress.toFixed(3)})` }} />
-          </div>
-        </div>
-      </div>
+              {HERO.description}
+            </p>
 
-      <Header />
-
-      {/* Hero Section */}
-      <section
-        data-section-id="hero"
-        ref={heroParallaxRef}
-        className="parallax-root relative isolate min-h-screen flex items-center justify-center overflow-hidden pt-20 px-4 sm:px-6 md:px-8"
-      >
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div ref={particlesRef} className="absolute inset-0">
-            {isClientReady &&
-              pollenParticles.map((particle) => (
-                <span
-                  key={particle.id}
-                  className="pollen-particle"
-                  style={{
-                    left: particle.left,
-                    top: particle.top,
-                    width: `${particle.size}px`,
-                    height: `${particle.size}px`,
-                    animationDelay: particle.delay,
-                    animationDuration: particle.duration,
-                  }}
-                />
-              ))}
-          </div>
-          <div data-parallax-depth="-12" className="parallax-layer absolute -top-24 -left-16 w-80 h-80 rounded-full bg-primary/30 blur-3xl" />
-          <div data-parallax-depth="18" className="parallax-layer absolute -bottom-28 -right-16 w-96 h-96 rounded-full bg-secondary/30 blur-3xl" />
-          <div data-parallax-depth="10" className="parallax-layer absolute top-1/4 -right-10 w-60 h-60 rounded-full bg-accent/20 blur-3xl" />
-          {heroSlides.map((slide, idx) => (
             <div
-              key={slide.id}
-              data-parallax-depth="-8"
-              className={`parallax-layer absolute inset-0 transition-opacity duration-1000 ${
-                idx === currentHeroIndex ? 'opacity-100' : 'opacity-0'
-              }`}
+              className="ap-rise mt-10 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-7"
+              style={{ animationDelay: '380ms' }}
             >
-              <div
-                data-parallax-depth="-22"
-                className="parallax-layer hero-depth-layer hero-depth-bg absolute inset-0 bg-cover bg-no-repeat bg-center"
-                style={{ backgroundImage: `url(${slide.url})` }}
-              />
-              <div
-                data-parallax-depth="-10"
-                className="parallax-layer hero-depth-layer hero-depth-mid absolute inset-0 bg-cover bg-no-repeat bg-center"
-                style={{ backgroundImage: `url(${slide.url})` }}
-              />
-              <div
-                data-parallax-depth="8"
-                className="parallax-layer hero-depth-layer hero-depth-front absolute inset-0 bg-cover bg-no-repeat bg-center"
-                style={{ backgroundImage: `url(${slide.url})` }}
-              />
-            </div>
-          ))}
-          <div data-parallax-depth="-6" className="parallax-layer absolute inset-0 bg-gradient-to-r from-black/28 via-black/12 to-black/28" />
-        </div>
-
-        <div
-          data-parallax-depth="12"
-          className="parallax-layer max-w-6xl mx-auto relative z-10 text-center px-4 py-8 sm:px-6 sm:py-10 md:px-10 md:py-14 hero-stagger hero-copy"
-        >
-          <div className="mb-6 sm:mb-8 inline-block hero-stagger-item" style={{ animationDelay: '120ms' }}>
-            <div className="px-4 py-2 sm:px-6 sm:py-3 bg-white/10 border border-white/20 rounded-full">
-              <span className="text-white font-semibold text-base sm:text-lg tracking-wide">{currentHeroSlide.badge}</span>
-            </div>
-          </div>
-
-          <h1 className="hero-text hero-stagger-item slide-from-left text-white mb-6 sm:mb-8 max-w-5xl mx-auto [text-shadow:0_2px_14px_rgba(0,0,0,0.38)]" style={{ animationDelay: '220ms' }} role="heading" aria-level={1}>
-            {currentHeroSlide.title}
-          </h1>
-
-          <p className="hero-subtext hero-stagger-item scroll-anim slide-from-right text-white/90 max-w-4xl mx-auto mb-8 sm:mb-12 font-light [text-shadow:0_2px_10px_rgba(0,0,0,0.3)]" style={{ animationDelay: '320ms' }}>
-            {currentHeroSlide.description}
-          </p>
-
-            <div className="hero-stagger-item flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-10 sm:mb-16" style={{ animationDelay: '420ms' }}>
-              <Link href="/store" className="w-full sm:w-auto">
-                <Button className="premium-button w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 text-base sm:text-lg">
-                  Ver Tienda
-                  <ArrowRight className="w-5 h-5 ml-2" />
+              <Link href={HERO.primaryCta.href}>
+                <Button className="w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base font-semibold transition-all hover:scale-[1.03] active:scale-95">
+                  {HERO.primaryCta.label}
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
-            </div>
-
-          <div ref={statsRef} className="hero-stagger-item mt-10 sm:mt-20 pt-10 sm:pt-20 border-t border-white/20" style={{ animationDelay: '520ms' }}>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveControl((prev) => (prev === 'productos' ? null : 'productos'));
-                  playTechSound('click');
-                }}
-                className={`bento-control-card text-left ${activeControl === 'productos' ? 'is-active' : ''}`}
+              <Link
+                href={HERO.secondaryCta.href}
+                className="ap-link text-base text-white hover:text-white justify-center sm:justify-start"
               >
-                <div className="bento-glitch text-3xl sm:text-4xl font-bold text-primary mb-2">{stats.products}+</div>
-                <p className="text-white/90 font-medium">Productos Tecnicos</p>
-                {activeControl === 'productos' && <p className="mt-2 text-xs text-white/80">Catalogo modular de equipos, repuestos y consumibles especializados.</p>}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveControl((prev) => (prev === 'clientes' ? null : 'clientes'));
-                  playTechSound('click');
-                }}
-                className={`bento-control-card text-left ${activeControl === 'clientes' ? 'is-active' : ''}`}
-              >
-                <div className="bento-glitch text-3xl sm:text-4xl font-bold text-primary mb-2">{stats.clients}+</div>
-                <p className="text-white/90 font-medium">Clientes Activos</p>
-                {activeControl === 'clientes' && <p className="mt-2 text-xs text-white/80">Productores y empresas que operan con flujo de compra asistido.</p>}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveControl((prev) => (prev === 'soporte' ? null : 'soporte'));
-                  playTechSound('click');
-                }}
-                className={`bento-control-card text-left ${activeControl === 'soporte' ? 'is-active' : ''}`}
-              >
-                <div className="bento-glitch text-3xl sm:text-4xl font-bold text-primary mb-2">{stats.service}/7</div>
-                <p className="text-white/90 font-medium">Soporte Operativo</p>
-                {activeControl === 'soporte' && <p className="mt-2 text-xs text-white/80">Canal de respuesta rapida para cotizacion y continuidad operativa.</p>}
-              </button>
+                {HERO.secondaryCta.label}
+                <ChevronRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
 
-      </section>
-
-      {/* Brands Section */}
-      <section data-section-id="brands" ref={brandsSectionRef} data-reveal className="reveal-block py-20 sm:py-24 md:py-32 px-4 sm:px-6 md:px-8 bg-muted/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-20">
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-foreground mb-4 sm:mb-6">Marcas que Trabajan con Nosotros</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Alianzas estrategicas con las mejores marcas del sector ganadero</p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto items-stretch">
-              {brands.map((brand, idx) => {
-                const brandHref =
-                  brand.url && brand.url.trim().length > 0
-                    ? brand.url
-                    : `/store?brand=${encodeURIComponent(normalizeBrandName(brand.name))}`;
-                const isExternal = brandHref.startsWith('http');
-                const cardClass = `interactive-tilt tilt-card brand-cascade-card brand-macro-card bg-white rounded-2xl min-h-[220px] sm:min-h-[240px] p-6 sm:p-8 flex items-center justify-center hover:shadow-xl transition-all duration-300 border border-border/20 hover:border-primary/50 ${
-                  brandsCascadeActive ? 'brand-cascade-active' : ''
-                } ${
-                  normalizeBrandName(brand.name).toLowerCase().includes('lister')
-                    ? 'brand-variant-lister'
-                    : normalizeBrandName(brand.name).toLowerCase().includes('crv')
-                    ? 'brand-variant-crv'
-                    : normalizeBrandName(brand.name).toLowerCase().includes('melasty')
-                    ? 'brand-variant-melasty'
-                    : normalizeBrandName(brand.name).toLowerCase().includes('sunway')
-                    ? 'brand-variant-sunway'
-                    : 'brand-variant-default'
-                }`
-                const cardStyle = {
-                  '--brand-index': idx,
-                } as CSSProperties
-
-                const cardContent = (
-                  <>
-                    <div className="brand-liquid-bg" />
-                    <div className="brand-neon-border" />
-                    <div className="brand-energy-ring" />
-                    <div className="brand-logo-wrap relative w-full h-28 flex flex-col items-center justify-center gap-3">
-                      <img src={brand.logo || "/placeholder.svg"} alt={brand.name} className="brand-logo brand-logo-inner w-full max-w-[220px] max-h-20 object-contain" />
-                      <span className="text-sm font-semibold tracking-[0.18em] uppercase text-muted-foreground">{normalizeBrandName(brand.name)}</span>
-                    </div>
-                  </>
-                );
-
-                return isExternal ? (
-                  <a
-                    key={brand.id}
-                    href={brandHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cardClass}
-                    style={cardStyle}
-                    onMouseMove={handleBrandCardMove}
-                    onMouseLeave={handleBrandCardLeave}
-                  >
-                    {cardContent}
-                  </a>
-                ) : (
-                  <Link
-                    key={brand.id}
-                    href={brandHref}
-                    className={cardClass}
-                    style={cardStyle}
-                    onMouseMove={handleBrandCardMove}
-                    onMouseLeave={handleBrandCardLeave}
-                  >
-                    {cardContent}
-                  </Link>
-                );
-              })}
-            </div>
+        <div className="ap-hero-scroll">
+          <span>Desliza</span>
+          <ChevronDown className="w-4 h-4" strokeWidth={1.5} />
         </div>
       </section>
 
-      <section data-section-id="benefits" data-reveal className="reveal-block py-16 sm:py-20 px-4 sm:px-6 md:px-8 bg-background">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-10 sm:mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">Una experiencia mas simple y rapida</h2>
-            <p className="text-muted-foreground text-base sm:text-lg">Todo el flujo pensado para que encuentres lo que necesitas sin perder tiempo.</p>
+      {/* ══ 2. MARCAS ══ Credibilidad prestada, justo donde el rebote es mayor */}
+      <div className="ap-marquee" aria-hidden="true">
+        <div className="ap-marquee-track">
+          {[0, 1].map((copy) => (
+            <div key={copy} className="flex items-center gap-[3.4rem]">
+              {marqueeItems.map((name, index) => (
+                <span key={`${copy}-${index}`} className="ap-marquee-item">
+                  {name}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ 3. CIFRAS ══ Cuantifica la escala sin pedir esfuerzo de lectura */}
+      <section data-reveal className="reveal-block py-20 sm:py-28">
+        <div className="ap-shell">
+          <div ref={statsRef} className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 text-center">
+            {STATS.map((stat, index) => (
+              <div
+                key={stat.label}
+                className="reveal-stagger"
+                style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
+              >
+                <p className="ap-stat-value">
+                  {counters[index]}
+                  <span className="text-primary">{stat.suffix}</span>
+                </p>
+                <p className="ap-stat-label">{stat.label}</p>
+              </div>
+            ))}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {homeBenefits.map((item, idx) => {
-              const Icon = item.icon;
+        </div>
+      </section>
+
+      {/* ══ 4. SERVICIOS ══ Responde "¿qué hacen?" en menos de 5 s */}
+      <section data-reveal className="reveal-block ap-section bg-muted">
+        <div className="ap-shell">
+          <div className="max-w-2xl mb-14 sm:mb-20">
+            <p className="ap-overline">Capacidades</p>
+            <h2 className="ap-title2 mt-5">Todo lo que la operacion necesita, en un solo socio tecnico.</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {SERVICES.map((service, index) => {
+              const Icon = ICONS[service.icon] ?? ClipboardCheck;
               return (
-                <div
-                  key={item.title}
-                  className="rounded-2xl border border-border bg-card p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-fade-in-up"
-                  style={{ animationDelay: `${idx * 120}ms` }}
+                <article
+                  key={service.title}
+                  className="ap-service-card reveal-stagger"
+                  style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </div>
+                  <span className="ap-service-icon">
+                    <Icon className="w-5 h-5" strokeWidth={1.5} />
+                  </span>
+                  <h3 className="text-lg font-semibold text-foreground mb-2.5">{service.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
+                </article>
               );
             })}
           </div>
         </div>
       </section>
 
-      <section data-section-id="flow" data-reveal className="reveal-block py-16 sm:py-20 px-4 sm:px-6 md:px-8 bg-muted/40">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-4 mb-8 sm:mb-10 flex-wrap">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">Como comprar en Rockink IMM</h2>
-            <Sparkles className="w-7 h-7 text-primary animate-float" />
+      {/* ══ 5. SCROLL FIJO ══ La imagen se abre a pantalla completa mientras bajas.
+             Es el momento de mayor impacto: la pausa que separa "qué hacemos"
+             de "cómo lo hacemos". */}
+      <section data-scrollfx="pin" className="ap-pin ap-dark">
+        <div className="ap-pin-stage">
+          <div className="ap-pin-frame">
+            <img
+              src={IMAGES.showcase}
+              alt=""
+              className="ap-pin-media"
+              loading="lazy"
+              aria-hidden="true"
+            />
+            <div className="ap-pin-veil" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {steps.map((step, idx) => (
-              <div key={step.title} className="rounded-2xl bg-background border border-border p-6 relative overflow-hidden">
-                <div className="text-4xl font-black text-primary/20 absolute -top-2 -right-2">{`0${idx + 1}`}</div>
-                <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground">{step.description}</p>
+
+          <div className="ap-pin-copy">
+            <p className="ap-overline">{SHOWCASE.overline}</p>
+            <h2 className="ap-pin-title mt-4">{SHOWCASE.title}</h2>
+            <p className="ap-pin-desc">{SHOWCASE.description}</p>
+
+            <div className="ap-pin-markers">
+              {SHOWCASE.markers.map((marker, index) => (
+                <span
+                  key={marker}
+                  className="ap-pin-marker"
+                  style={{ '--i': index } as CSSProperties}
+                >
+                  {marker}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="ap-pin-rail" aria-hidden="true" />
+        </div>
+      </section>
+
+      {/* ══ 6. PROCESO ══ Saber que hay un método baja el riesgo percibido */}
+      <section data-reveal className="reveal-block ap-section">
+        <div className="ap-shell">
+          <div className="max-w-2xl mb-14 sm:mb-20">
+            <p className="ap-overline">Como trabajamos</p>
+            <h2 className="ap-title2 mt-5">Cuatro pasos, sin sorpresas.</h2>
+          </div>
+
+          <div className="ap-timeline">
+            {PROCESS.map((item, index) => (
+              <div
+                key={item.step}
+                className="ap-timeline-item reveal-stagger"
+                style={{ '--stagger': `${index * 110}ms` } as CSSProperties}
+              >
+                <p className="ap-timeline-step">{`0${index + 1} — ${item.step}`}</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed pr-4">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section data-section-id="social" data-reveal className="reveal-block social-macro-section py-16 sm:py-20 px-4 sm:px-6 md:px-8 bg-background relative overflow-hidden">
-        <div className="social-macro-bg" />
-        <div className="social-macro-grid" />
-        <div className="max-w-7xl mx-auto">
-          <div className="social-logo-wrap">
-            {socialCards.map((social, idx) => (
-              <a
-                key={social.name}
-                href={social.href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={social.name}
-                className="social-logo-orb group"
-                style={{ animationDelay: `${idx * 120}ms` }}
+      {/* ══ 7. PROYECTOS ══ Un caso concreto vale más que diez adjetivos */}
+      <section data-reveal className="reveal-block ap-section bg-muted">
+        <div className="ap-shell">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
+            <div className="max-w-2xl">
+              <p className="ap-overline">Proyectos</p>
+              <h2 className="ap-title2 mt-5">Trabajo entregado en campo.</h2>
+            </div>
+            <Link href="/contacto" className="ap-link shrink-0">
+              Consultar un caso
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {PROJECTS.map((project, index) => (
+              <article
+                key={project.title}
+                className="ap-project-card reveal-stagger"
+                style={{ '--stagger': `${index * 110}ms` } as CSSProperties}
               >
-                <span className="social-logo-halo" style={{ boxShadow: `0 0 60px ${social.glow}` }} />
-                <span className="social-logo-ring" />
-                <img src={social.logo} alt={social.name} className="social-logo-icon" />
-              </a>
+                <Image
+                  src={IMAGES.projects[index] ?? IMAGES.projects[0]}
+                  alt={project.title}
+                  fill
+                  loading="lazy"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="ap-project-img"
+                />
+                <div className="ap-project-veil" />
+                <div className="ap-project-body">
+                  <span className="ap-project-tag">{project.category}</span>
+                  <h3 className="text-xl font-semibold leading-snug">{project.title}</h3>
+                  <p className="mt-2 text-sm text-white/70 leading-relaxed">{project.description}</p>
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-white/60">
+                    <MapPin className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    {project.location}
+                  </p>
+                </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section data-section-id="cta" data-reveal className="reveal-block py-20 sm:py-24 md:py-32 px-4 sm:px-6 md:px-8 bg-gradient-to-r from-primary via-secondary to-accent relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl" />
-        </div>
+      {/* ══ 8. GALERÍA ══ En el agro la foto de campo convence más que el texto.
+             Con 6 o más fotos el diseño pasa solo a mosaico. */}
+      <section data-reveal className="reveal-block ap-section">
+        <div className="ap-shell">
+          <div className="max-w-2xl mb-14">
+            <p className="ap-overline">Galeria</p>
+            <h2 className="ap-title2 mt-5">Trabajo, equipo y campo.</h2>
+          </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-primary-foreground mb-6 sm:mb-8 leading-tight">Estamos Listos para Ayudarte</h2>
-          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12">Unete a empresas y productores que confian en Rockink IMM para sus soluciones ganaderas.</p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/store">
-              <Button className="premium-button w-full sm:w-auto bg-primary-foreground text-primary hover:bg-white text-lg font-bold">
-                Ir a Tienda
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-            <Link href="/about">
-              <Button variant="outline" className="premium-button w-full sm:w-auto border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground/20 text-lg font-bold bg-transparent">
-                Conocer Mas
-              </Button>
-            </Link>
+          <div className={`ap-gallery ${IMAGES.gallery.length >= 6 ? 'ap-gallery--mosaic' : ''}`}>
+            {IMAGES.gallery.map((src, index) => (
+              <div
+                key={`${src}-${index}`}
+                className="ap-gallery-tile reveal-stagger"
+                style={{ '--stagger': `${index * 60}ms` } as CSSProperties}
+              >
+                <img src={src} alt="" loading="lazy" className="ap-parallax" />
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* ══ 9. ALIANZAS ══ Validación externa que cierra el ciclo de confianza */}
+      <section data-reveal className="reveal-block ap-section bg-muted">
+        <div className="ap-shell grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 lg:gap-20 items-center">
+          <div>
+            <p className="ap-overline">{PARTNERSHIP_NOTE.overline}</p>
+            <h2 className="ap-title2 mt-5">{PARTNERSHIP_NOTE.title}</h2>
+            <p className="ap-sub mt-5 text-base sm:text-lg">{PARTNERSHIP_NOTE.description}</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {brands.map((brand, index) => (
+              <div
+                key={brand.id}
+                className="ap-card reveal-stagger flex items-center justify-center p-6 min-h-[7rem]"
+                style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
+              >
+                <img
+                  src={brand.logo || '/placeholder-logo.svg'}
+                  alt={brand.name}
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.src = '/placeholder-logo.svg';
+                  }}
+                  className="max-h-14 w-full object-contain"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ 10. RESPALDO ══ Elimina la última objeción racional del comprador */}
+      <section data-reveal className="reveal-block ap-section">
+        <div className="ap-shell">
+          <div className="max-w-2xl mb-14">
+            <p className="ap-overline">Respaldo</p>
+            <h2 className="ap-title2 mt-5">Lo que garantizamos por escrito.</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {CERTIFICATIONS.map((item, index) => {
+              const Icon = ICONS[item.icon] ?? ShieldCheck;
+              return (
+                <article
+                  key={item.title}
+                  className="ap-cert-card reveal-stagger"
+                  style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
+                >
+                  <span className="ap-cert-icon">
+                    <Icon className="w-5 h-5" strokeWidth={1.5} />
+                  </span>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-1.5">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ 11. BLOG ══ Demuestra expertise; contenido opcional que no estorba */}
+      <section data-reveal className="reveal-block ap-section bg-muted">
+        <div className="ap-shell">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-14">
+            <div className="max-w-2xl">
+              <p className="ap-overline">Conocimiento</p>
+              <h2 className="ap-title2 mt-5">Notas tecnicas del campo.</h2>
+            </div>
+            <Link href="/blog" className="ap-link shrink-0">
+              Ver todas
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {POSTS.map((post, index) => (
+              <Link
+                key={post.slug}
+                href={`/blog#${post.slug}`}
+                className="ap-post-card reveal-stagger"
+                style={{ '--stagger': `${index * 110}ms` } as CSSProperties}
+              >
+                <div className="ap-post-meta">
+                  <span>{post.category}</span>
+                  <span>·</span>
+                  <span>{post.readingTime}</span>
+                </div>
+                <h3 className="text-lg font-semibold text-foreground leading-snug mb-3">{post.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed flex-grow">{post.excerpt}</p>
+                <span className="ap-link mt-5 text-sm">
+                  Leer
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ 12. FAQ ══ Última barrera antes del formulario */}
+      <section data-reveal className="reveal-block ap-section">
+        <div className="ap-shell grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-12 lg:gap-20 items-start">
+          <div className="lg:sticky lg:top-28">
+            <p className="ap-overline">Dudas frecuentes</p>
+            <h2 className="ap-title2 mt-5">Antes de escribirnos.</h2>
+            <p className="ap-sub mt-5 text-base">
+              Si tu duda no esta aqui, escribenos por WhatsApp y te respondemos directo.
+            </p>
+          </div>
+
+          <FaqAccordion items={FAQS} />
+        </div>
+      </section>
+
+      {/* ══ 13. CONTACTO ══ Cierre: todas las objeciones ya fueron resueltas */}
+      <section data-reveal className="reveal-block ap-dark ap-section">
+        <div className="ap-shell grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+          <div>
+            <p className="ap-overline">Contacto</p>
+            <h2 className="ap-title2 mt-5 text-white">Cuentanos que necesita tu operacion.</h2>
+            <p className="mt-5 text-lg leading-relaxed text-white/60">
+              Respondemos con una propuesta real, no con un precio referencial.
+            </p>
+
+            <div className="mt-10 space-y-5">
+              <a
+                href={`https://wa.me/${CONTACT.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-4 text-white/80 hover:text-primary transition-colors"
+              >
+                <span className="ap-cert-icon">
+                  <SocialIcon name="whatsapp" className="w-5 h-5" />
+                </span>
+                <span className="font-medium">{CONTACT.whatsappDisplay}</span>
+              </a>
+              <a
+                href={`mailto:${CONTACT.email}`}
+                className="flex items-center gap-4 text-white/80 hover:text-primary transition-colors"
+              >
+                <span className="ap-cert-icon">
+                  <Mail className="w-5 h-5" strokeWidth={1.5} />
+                </span>
+                <span className="font-medium">{CONTACT.email}</span>
+              </a>
+              <p className="flex items-start gap-4 text-white/50">
+                <span className="ap-cert-icon">
+                  <MapPin className="w-5 h-5" strokeWidth={1.5} />
+                </span>
+                <span className="text-sm leading-relaxed pt-2">{CONTACT.address}</span>
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-10">
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={social.name}
+                  className="footer-social-btn"
+                >
+                  <SocialIcon name={social.icon} className="w-4 h-4" />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <input name="name" type="text" placeholder="Tu nombre y apellido" className="ap-input" required />
+            <input name="phone" type="tel" placeholder="Tu telefono" className="ap-input" />
+            <textarea
+              name="message"
+              rows={6}
+              placeholder="Cuentanos que necesitas"
+              className="ap-input resize-y"
+              required
+            />
+            <Button
+              type="submit"
+              className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90 py-6 text-base font-semibold transition-all hover:scale-[1.02] active:scale-95"
+            >
+              Enviar por WhatsApp
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+            <p className="text-xs text-white/40 text-center pt-1">
+              Se abrira WhatsApp con tu mensaje listo para enviar.
+            </p>
+          </form>
+        </div>
+      </section>
+
+      {/* WhatsApp persistente: para el productor en campo es el atajo, no un adorno */}
       <a
-        href="https://wa.me/51962838329"
+        href={`https://wa.me/${CONTACT.whatsapp}`}
         target="_blank"
         rel="noreferrer"
-        className="interactive-tilt whatsapp-float fixed bottom-6 right-5 z-40"
+        className="whatsapp-float fixed bottom-6 right-5 z-40"
         aria-label="Escribir por WhatsApp"
       >
         <span className="whatsapp-ripple" />
         <span className="whatsapp-ripple whatsapp-ripple-delay" />
         <span className="whatsapp-float-inner">
-          <img
-            src="https://cdn.simpleicons.org/whatsapp/FFFFFF"
-            alt="WhatsApp"
-            className="w-6 h-6"
-          />
+          <SocialIcon name="whatsapp" className="w-6 h-6" />
         </span>
       </a>
 
-      {/* Footer */}
-      <footer className="bg-foreground text-primary-foreground py-12 sm:py-16 px-4 sm:px-6 md:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 sm:gap-12 mb-12 sm:mb-16">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <img src="/logoempresa.png" alt="Rockink IMM" className="w-8 h-8" />
-                <span className="font-bold text-xl text-white">Rockink IMM</span>
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed">Soluciones de ingenieria ganadera enfocadas en productividad, bienestar animal e innovacion continua.</p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Productos</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/store" className="hover:text-primary transition">Catalogo Completo</a></li>
-                <li><a href="/store#categories" className="hover:text-primary transition">Categorias</a></li>
-                <li><a href="/about" className="hover:text-primary transition">Sobre Nosotros</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Soporte</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/contacto" className="hover:text-primary transition">Centro de Ayuda</a></li>
-                <li><a href="/contacto#faq" className="hover:text-primary transition">Preguntas Frecuentes</a></li>
-                <li><a href="/contacto" className="hover:text-primary transition">Contactanos</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Legal</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="/privacidad" className="hover:text-primary transition">Privacidad</a></li>
-                <li><a href="/terminos" className="hover:text-primary transition">Terminos</a></li>
-                <li><a href="/cookies" className="hover:text-primary transition">Cookies</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4 text-white">Contacto</h4>
-              <p className="text-gray-400 text-sm mb-2">contacto@rockinkimm.com</p>
-              <p className="text-gray-400 text-sm mb-4">+51 962838329</p>
-              <div className="flex gap-3">
-                <a
-                  href="https://www.facebook.com/rockinkperu"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-10 h-10 bg-primary/20 hover:bg-primary rounded-full flex items-center justify-center transition"
-                >
-                  <span className="text-xs">FB</span>
-                </a>
-                <a
-                  href="https://www.instagram.com/rockink_imm/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-10 h-10 bg-primary/20 hover:bg-primary rounded-full flex items-center justify-center transition"
-                >
-                  <span className="text-xs">IG</span>
-                </a>
-                <a
-                  href="https://www.tiktok.com/@rockinkimm"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-10 h-10 bg-primary/20 hover:bg-primary rounded-full flex items-center justify-center transition"
-                >
-                  <span className="text-xs">TT</span>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-700 pt-8 text-center">
-            <p className="text-gray-400 text-sm">Â© 2026 Rockink IMM. Todos los derechos reservados.</p>
-            <p className="text-gray-500 text-xs mt-2">Transformando la ingenieria ganadera con innovacion y calidad</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
@@ -1339,8 +667,3 @@ export default function Home() {
     </CartProvider>
   );
 }
-
-
-
-
-

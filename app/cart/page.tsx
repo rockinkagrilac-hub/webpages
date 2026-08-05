@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PRODUCTS, PHONE_NUMBERS, Product } from '@/lib/data';
@@ -192,7 +193,7 @@ function CartContent() {
 
                   <Button
                     onClick={() => setShowConfirm(true)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 flex items-center justify-center gap-2"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="w-5 h-5" />
                     Contactar por WhatsApp
@@ -233,7 +234,7 @@ function CartContent() {
                 <Button variant="outline" onClick={() => setShowConfirm(false)} className="flex-1">
                   Cancelar
                 </Button>
-                <Button onClick={handleCheckout} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                <Button onClick={handleCheckout} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
                   Abrir WhatsApp
                 </Button>
               </div>
@@ -242,12 +243,7 @@ function CartContent() {
         </div>
       )}
 
-      <footer className="bg-primary text-primary-foreground py-8 px-4 mt-12">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="mb-2">© 2026 Rockink IMM - Ingenieria Ganadera</p>
-          <p className="text-sm opacity-75">Soluciones tecnicas para operaciones ganaderas</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

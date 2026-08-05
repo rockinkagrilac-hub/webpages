@@ -1,6 +1,7 @@
 'use client';
 
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -425,12 +426,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
         )}
       </section>
 
-      <footer className="bg-primary text-primary-foreground py-8 px-4 mt-12">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="mb-2">© 2026 Rockink IMM - Ingenieria Ganadera</p>
-          <p className="text-sm opacity-75">Soluciones tecnicas para operaciones ganaderas</p>
-        </div>
-      </footer>
+      <Footer />
 
       <Dialog open={openZoom} onOpenChange={setOpenZoom}>
         <DialogContent className="sm:max-w-4xl p-2">
