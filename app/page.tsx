@@ -204,7 +204,8 @@ function HomeContent() {
           poster={IMAGES.heroPoster}
           aria-hidden="true"
         >
-          <source src="/hero-mobile.mp4" type="video/mp4" />
+          <source src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 991px)" />
+          <source src="/hero-desktop.mp4" type="video/mp4" />
         </video>
         <div className="ap-hero-veil" />
 

@@ -144,10 +144,10 @@ function AboutContent() {
             playsInline
             preload="none"
             aria-hidden="true"
-            poster="/1.png"
+            poster="/1.webp"
           >
             <source src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 991px)" />
-            <source src="/videodefondosobrenosotros.mp4" type="video/mp4" />
+            <source src="/hero-desktop.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
           <div className="absolute bottom-0 inset-x-0 p-7 sm:p-12">

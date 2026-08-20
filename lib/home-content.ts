@@ -24,20 +24,20 @@
  */
 export const IMAGES = {
   /** Primer fotograma del video del hero. Se ve mientras el video carga. */
-  heroPoster: '/1.png',
+  heroPoster: '/1.webp',
   /**
    * Foto de la seccion con scroll fijo. Es LA imagen del sitio: llega a ocupar
    * la pantalla completa. Importante: el motivo debe estar CENTRADO, porque al
    * inicio se ve recortada en una ventana central y se va abriendo.
    */
-  showcase: '/3.png',
+  showcase: '/3.webp',
   /** Una foto vertical por proyecto, en el mismo orden que PROJECTS. */
-  projects: ['/3.png', '/1.png', '/2.png'],
+  projects: ['/3.webp', '/1.webp', '/2.webp'],
   /**
    * Galeria. Con 6 o mas fotos el diseno cambia solo a mosaico;
    * con menos, se muestra en cuadricula regular.
    */
-  gallery: ['/3.png', '/1.png', '/2.png'],
+  gallery: ['/3.webp', '/1.webp', '/2.webp'],
 };
 
 export const HERO = {

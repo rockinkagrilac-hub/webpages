@@ -56,9 +56,9 @@ values (
     {"id":"3","name":"Melasty","logo":"https://pbs.twimg.com/profile_images/1354803880580706310/k9_Ijr_K_400x400.jpg"}
   ]'::jsonb,
   '[
-    {"id":"hero-1","url":"/1.png","badge":"Rockink IMM","title":"Innovación que impulsa tu ganadería","description":"Tecnología inteligente para el campo moderno."},
-    {"id":"hero-2","url":"/2.png","badge":"Ganadería de precisión","title":"Resultados reales","description":"Transformamos datos en productividad ganadera."},
-    {"id":"hero-3","url":"/3.png","badge":"Del campo a la nube","title":"Control total desde cualquier lugar","description":"Datos, control y productividad en una sola plataforma."}
+    {"id":"hero-1","url":"/1.webp","badge":"Rockink IMM","title":"Innovación que impulsa tu ganadería","description":"Tecnología inteligente para el campo moderno."},
+    {"id":"hero-2","url":"/2.webp","badge":"Ganadería de precisión","title":"Resultados reales","description":"Transformamos datos en productividad ganadera."},
+    {"id":"hero-3","url":"/3.webp","badge":"Del campo a la nube","title":"Control total desde cualquier lugar","description":"Datos, control y productividad en una sola plataforma."}
   ]'::jsonb
 )
 on conflict (id) do nothing;

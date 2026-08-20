@@ -62,21 +62,21 @@ export const DEFAULT_BRANDS: Brand[] = [
 export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'hero-1',
-    url: '/1.png',
+    url: '/1.webp',
     badge: 'Rockink IMM',
     title: 'Innovacion que impulsa tu ganaderia',
     description: 'Tecnologia inteligente para el campo moderno.',
   },
   {
     id: 'hero-2',
-    url: '/2.png',
+    url: '/2.webp',
     badge: 'Ganaderia de precision',
     title: 'Resultados reales',
     description: 'Transformamos datos en productividad ganadera.',
   },
   {
     id: 'hero-3',
-    url: '/3.png',
+    url: '/3.webp',
     badge: 'Del campo a la nube',
     title: 'Control total desde cualquier lugar',
     description: 'Datos, control y productividad en una sola plataforma.',
