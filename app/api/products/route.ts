@@ -147,7 +147,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    if (!isAuthorized(request)) {
+    if (!(await isAuthorized(request))) {
       return jsonNoStore({ message: 'Unauthorized' }, { status: 401 })
     }
 

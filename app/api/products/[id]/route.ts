@@ -50,7 +50,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     return jsonNoStore({ message: 'Unauthorized' }, { status: 401 })
   }
 
@@ -83,7 +83,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     return jsonNoStore({ message: 'Unauthorized' }, { status: 401 })
   }
 

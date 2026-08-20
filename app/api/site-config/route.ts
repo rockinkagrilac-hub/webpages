@@ -31,7 +31,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    if (!isAuthorized(request)) {
+    if (!(await isAuthorized(request))) {
       return jsonNoStore({ message: 'Unauthorized' }, { status: 401 })
     }
 
@@ -43,7 +43,13 @@ export async function PUT(request: Request) {
 
     const updated = await updateSiteConfig(parsed.data)
     return jsonNoStore(updated)
-  } catch {
-    return jsonNoStore({ message: 'Error al guardar configuracion' }, { status: 500 })
+  } catch (error) {
+    // El aviso de "falta aplicar la migración" es accionable: hay que dejarlo
+    // llegar al panel en vez de sustituirlo por un error genérico.
+    const message =
+      error instanceof Error && error.message.includes('site_config')
+        ? error.message
+        : 'Error al guardar configuracion'
+    return jsonNoStore({ message }, { status: 500 })
   }
 }
