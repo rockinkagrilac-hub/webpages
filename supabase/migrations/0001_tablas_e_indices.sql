@@ -1,28 +1,33 @@
 -- ============================================================================
--- Rockink IMM — migración 0001
+-- Rockink IMM — migración 0001: tablas nuevas e índices
 --
--- Qué resuelve:
---   1. site_config vivía en el sistema de archivos (data/site-config.json).
---      En Vercel el disco es efímero, así que lo que se guardaba desde el panel
---      de administración se perdía en el siguiente despliegue. Pasa a Supabase.
---   2. El control de intentos de login estaba en memoria del proceso. En
---      serverless cada instancia tiene la suya, así que el límite se evadía
---      solo. Pasa a una tabla compartida.
---   3. Faltaban índices en las columnas por las que más se consulta.
+-- ESTA MIGRACIÓN NO BORRA NADA.
 --
--- Cómo aplicarla:
---   Supabase -> SQL Editor -> pegar este archivo -> Run.
---   Es idempotente: se puede ejecutar más de una vez sin romper nada.
+-- Solo AÑADE:
+--   · 2 tablas nuevas (site_config, login_attempts) que hoy no existen
+--   · 1 fila en site_config, con la configuración que ya tenías
+--   · 6 índices sobre tablas existentes
 --
--- No cambia ninguna credencial ni toca las tablas existentes de productos.
+-- No hay ningún DROP TABLE, DELETE, TRUNCATE ni ALTER COLUMN.
+-- Tus 35 productos, 96 imágenes y 1 usuario administrador quedan intactos:
+-- un índice es una estructura de búsqueda aparte, no modifica las filas.
+--
+-- Todo va dentro de una transacción: si algo falla, no se aplica nada.
+-- Es idempotente: se puede ejecutar varias veces sin efecto adicional.
+--
+-- Cómo aplicarla: Supabase -> SQL Editor -> pegar todo -> Run.
 -- ============================================================================
+
+begin;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 1. Configuración del sitio (marcas, slides del hero, ofertas)
+-- 1. Configuración de la portada (marcas, slides del hero, ofertas)
 --
--- Una sola fila, forzada por el CHECK sobre la clave primaria: así nunca puede
--- haber dos configuraciones distintas compitiendo.
+-- Antes vivía en data/site-config.json. En Vercel el disco es efímero, así que
+-- lo que guardabas desde el panel se perdía en el siguiente despliegue.
+--
+-- Una sola fila, garantizada por el CHECK sobre la clave primaria.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create table if not exists public.site_config (
@@ -38,8 +43,9 @@ comment on table public.site_config is
   'Configuración editable de la portada. Siempre una única fila (id = 1).';
 
 
--- Siembra con la configuración que había en data/site-config.json.
--- Si la fila ya existe no se toca: no pisa cambios hechos desde el panel.
+-- Siembra con la configuración que ya tenías.
+-- ON CONFLICT DO NOTHING: si la fila existe, NO la pisa. Volver a ejecutar
+-- esta migración nunca sobrescribe lo que hayas guardado desde el panel.
 insert into public.site_config (id, offers_products, brands, hero_slides)
 values (
   1,
@@ -59,31 +65,32 @@ on conflict (id) do nothing;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 2. Control de intentos de acceso
+-- 2. Control de intentos de acceso al panel
 --
--- Compartido entre todas las instancias serverless, que es justamente lo que
--- el Map en memoria no podía ser.
+-- Antes vivía en un Map en memoria; en serverless cada instancia tenía el suyo,
+-- así que el límite de 5 intentos se evadía cayendo en otra instancia.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create table if not exists public.login_attempts (
-  ip       text        primary key,
-  intentos integer     not null default 0,
-  reset_at timestamptz not null,
+  ip         text        primary key,
+  intentos   integer     not null default 0,
+  reset_at   timestamptz not null,
   updated_at timestamptz not null default now()
 );
 
 comment on table public.login_attempts is
-  'Intentos fallidos de acceso al panel, por IP. Se limpia sola al expirar la ventana.';
+  'Intentos fallidos de acceso al panel, por IP. Caduca sola al expirar la ventana.';
 
 create index if not exists idx_login_attempts_reset_at
   on public.login_attempts (reset_at);
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 3. Índices sobre las tablas que ya existían
+-- 3. Índices sobre las tablas que ya existen
 --
--- product_images.product_id es el más importante: sin él, cada consulta de
--- imágenes recorre la tabla entera.
+-- Un índice NO cambia ni una sola fila: es una estructura auxiliar que hace
+-- rápidas las búsquedas. El más importante es el de product_images.product_id:
+-- sin él, cada consulta de imágenes recorre las 96 filas enteras.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create index if not exists idx_product_images_product_id
@@ -101,39 +108,22 @@ create index if not exists idx_products_marca
 create index if not exists idx_products_nombre
   on public.products (nombre);
 
--- Dos administradores no pueden compartir usuario.
+-- Impide que en el futuro se creen dos administradores con el mismo usuario
+-- escrito distinto ("Admin" y "admin"). Comprobado: hoy solo existe "juadmin",
+-- así que este índice se crea sin conflicto.
 create unique index if not exists idx_admin_users_username
   on public.admin_users (lower(username));
 
 
--- ─────────────────────────────────────────────────────────────────────────────
--- 4. Row Level Security
+commit;
+
+
+-- ============================================================================
+-- Comprobación posterior (opcional). Debe devolver los mismos números de antes:
 --
--- El servidor usa la service_role key, que ignora RLS, así que esto no cambia
--- el funcionamiento actual. Es una segunda barrera: si algún día se filtra la
--- clave anónima o un endpoint queda mal protegido, estas tablas siguen cerradas.
--- ─────────────────────────────────────────────────────────────────────────────
-
-alter table public.site_config    enable row level security;
-alter table public.login_attempts enable row level security;
-alter table public.admin_users    enable row level security;
-alter table public.products       enable row level security;
-alter table public.product_images enable row level security;
-
--- Lectura pública del catálogo y de la configuración de portada: es lo que la
--- web muestra a cualquier visitante.
-drop policy if exists lectura_publica_products on public.products;
-create policy lectura_publica_products
-  on public.products for select using (true);
-
-drop policy if exists lectura_publica_product_images on public.product_images;
-create policy lectura_publica_product_images
-  on public.product_images for select using (true);
-
-drop policy if exists lectura_publica_site_config on public.site_config;
-create policy lectura_publica_site_config
-  on public.site_config for select using (true);
-
--- admin_users y login_attempts no llevan ninguna política: sin política y con
--- RLS activo, nadie que no sea service_role puede leerlas ni escribirlas.
--- Las escrituras de todas las tablas quedan igual: solo service_role.
+--   select
+--     (select count(*) from public.products)       as productos,       -- 35
+--     (select count(*) from public.product_images) as imagenes,        -- 96
+--     (select count(*) from public.admin_users)    as administradores, --  1
+--     (select count(*) from public.site_config)    as configuracion;   --  1 (nueva)
+-- ============================================================================
