@@ -501,7 +501,7 @@ function AdminDashboardContent() {
                           )}
                           <span className={`text-xs px-2 py-1 rounded ${
                             product.inStock
-                              ? 'bg-accent text-accent-foreground'
+                              ? 'bg-green-100 text-green-700'
                               : 'bg-red-100 text-red-700'
                           }`}>
                             {product.inStock ? 'En Stock' : 'Agotado'}
@@ -589,7 +589,7 @@ function AdminDashboardContent() {
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
                           selectedOffersProducts.includes(product.id)
                             ? 'bg-primary border-primary'
-                            : 'border-border'
+                            : 'border-gray-300'
                         }`}
                       >
                         {selectedOffersProducts.includes(product.id) && (
