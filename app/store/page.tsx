@@ -19,7 +19,8 @@ import { normalizeBrandName } from '@/lib/product-brand';
 import { CartProvider, useCart } from '@/lib/cart-context';
 import { ArrowLeft, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 
-const CATEGORY_TREE: Array<{ label: string; children?: string[] }> = [];
+/** A partir de este numero de marcas, el panel muestra un buscador. */
+const BRAND_SEARCH_THRESHOLD = 8;
 
 function StoreContent() {
   const PRODUCTS_PER_PAGE = 16;
@@ -34,8 +35,10 @@ function StoreContent() {
   const [catalogTotal, setCatalogTotal] = useState(PRODUCTS.length);
   const [totalResults, setTotalResults] = useState(PRODUCTS.length);
   const [searchTerm, setSearchTerm] = useState('');
-  const [treeSearchTerm, setTreeSearchTerm] = useState('');
-  const [selectedTreeFilters, setSelectedTreeFilters] = useState<string[]>([]);
+  const [brandSearch, setBrandSearch] = useState('');
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [brandCounts, setBrandCounts] = useState<Record<string, number>>({});
+  const [loadFailed, setLoadFailed] = useState(false);
   const [onlyOffers, setOnlyOffers] = useState(false);
   const [sortBy, setSortBy] = useState<'relevance' | 'name_asc' | 'name_desc'>('relevance');
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,7 +63,6 @@ function StoreContent() {
   }, [toastMessage]);
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
-  const deferredTreeSearch = useDeferredValue(treeSearchTerm.trim().toLowerCase());
 
   const quickViewImages = quickViewProduct?.images?.length
     ? quickViewProduct.images.slice(0, 2)
@@ -73,20 +75,18 @@ function StoreContent() {
     (selectedBrand ? 1 : 0) +
     (onlyOffers ? 1 : 0) +
     (isPajillasView ? 1 : 0) +
-    (searchTerm.trim() ? 1 : 0) +
-    selectedTreeFilters.length;
+    (searchTerm.trim() ? 1 : 0);
 
-  const quickCategories = categories.slice(0, 6);
   const hasCategories = categories.length > 0;
 
-  const filteredTree = useMemo(() => {
-    const q = deferredTreeSearch;
-    if (!q) return CATEGORY_TREE;
-    return CATEGORY_TREE.filter((item) => {
-      if (item.label.toLowerCase().includes(q)) return true;
-      return item.children?.some((child) => child.toLowerCase().includes(q));
-    });
-  }, [deferredTreeSearch]);
+  const visibleBrands = useMemo(() => {
+    const query = brandSearch.trim().toLowerCase();
+    const list = query
+      ? availableBrands.filter((brand) => brand.toLowerCase().includes(query))
+      : availableBrands;
+    // Las marcas con resultados primero: filtrar por una que da cero es un callejon sin salida.
+    return [...list].sort((a, b) => (brandCounts[b] || 0) - (brandCounts[a] || 0));
+  }, [availableBrands, brandSearch, brandCounts]);
 
   const paginationItems = useMemo(() => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -127,32 +127,18 @@ function StoreContent() {
         onRemove: () => setIsPajillasView(false),
       });
     }
-    selectedTreeFilters.forEach((filter) => {
-      chips.push({
-        key: `tree-${filter}`,
-        label: filter,
-        onRemove: () => setSelectedTreeFilters((prev) => prev.filter((x) => x !== filter)),
-      });
-    });
     return chips;
-  }, [selectedCategory, selectedBrand, onlyOffers, isPajillasView, selectedTreeFilters]);
+  }, [selectedCategory, selectedBrand, onlyOffers, isPajillasView]);
 
   const handleAddedToCart = (product: Product) => {
     setToastMessage(`${product.name} agregado al carrito`);
-  };
-
-  const toggleTreeFilter = (value: string) => {
-    setSelectedTreeFilters((prev) =>
-      prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]
-    );
   };
 
   const resetFilters = () => {
     setSelectedCategory(null);
     setSelectedBrand(null);
     setSearchTerm('');
-    setTreeSearchTerm('');
-    setSelectedTreeFilters([]);
+    setBrandSearch('');
     setOnlyOffers(false);
     setIsPajillasView(false);
     setSortBy('relevance');
@@ -160,7 +146,7 @@ function StoreContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, selectedBrand, isPajillasView, onlyOffers, sortBy, deferredSearch, deferredTreeSearch, selectedTreeFilters]);
+  }, [selectedCategory, selectedBrand, isPajillasView, onlyOffers, sortBy, deferredSearch]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -178,7 +164,6 @@ function StoreContent() {
         if (selectedBrand) params.set('brand', selectedBrand);
         if (onlyOffers) params.set('onlyOffers', '1');
         if (isPajillasView) params.set('pajillas', '1');
-        selectedTreeFilters.forEach((filter) => params.append('tree', filter));
 
         const response = await fetch(`/api/products?${params.toString()}`, {
           signal: controller.signal,
@@ -186,10 +171,13 @@ function StoreContent() {
         if (!response.ok) throw new Error('Error API');
         const data = (await response.json()) as ProductsPageResponse;
 
+        setLoadFailed(false);
         setProducts(Array.isArray(data.items) ? data.items : []);
         setCategories(Array.isArray(data.categories) ? data.categories : []);
         setAvailableBrands(Array.isArray(data.brands) ? data.brands : []);
         setCategoryPreviews(Array.isArray(data.categoryPreviews) ? data.categoryPreviews : []);
+        setCategoryCounts(data.categoryCounts || {});
+        setBrandCounts(data.brandCounts || {});
         setCatalogTotal(typeof data.catalogTotal === 'number' ? data.catalogTotal : 0);
         setTotalResults(typeof data.total === 'number' ? data.total : 0);
         setTotalPages(typeof data.totalPages === 'number' ? data.totalPages : 1);
@@ -199,10 +187,15 @@ function StoreContent() {
         }
       } catch (err) {
         if (controller.signal.aborted) return;
+        // Distinguir "no hay resultados" de "no pudimos conectar": antes ambos
+        // casos mostraban el mismo mensaje culpando a los filtros del usuario.
+        setLoadFailed(true);
         setProducts(PRODUCTS);
         setCategories([]);
         setAvailableBrands([]);
         setCategoryPreviews([]);
+        setCategoryCounts({});
+        setBrandCounts({});
         setCatalogTotal(PRODUCTS.length);
         setTotalResults(PRODUCTS.length);
         setTotalPages(1);
@@ -223,7 +216,6 @@ function StoreContent() {
     onlyOffers,
     isPajillasView,
     sortBy,
-    selectedTreeFilters,
   ]);
 
   useEffect(() => {
@@ -320,67 +312,94 @@ function StoreContent() {
               </Button>
             </div>
 
-            {CATEGORY_TREE.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="font-semibold text-foreground mb-3">Buscar por categoría</p>
-                <input
-                  type="text"
-                  value={treeSearchTerm}
-                  onChange={(e) => setTreeSearchTerm(e.target.value)}
-                  placeholder="Buscar por categoría"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background mb-3"
-                />
-                <div className="max-h-64 sm:max-h-72 overflow-y-auto pr-1 space-y-2">
-                  {filteredTree.map((item) => (
-                    <div key={`tree-${item.label}`} className="space-y-1">
-                      <label className="flex items-center gap-2 text-sm text-foreground">
-                        <input
-                          type="checkbox"
-                          checked={selectedTreeFilters.includes(item.label)}
-                          onChange={() => toggleTreeFilter(item.label)}
-                          className="h-4 w-4 rounded border-input"
-                        />
-                        {item.label}
-                      </label>
-                      {item.children?.map((child) => (
-                        <label key={`tree-${item.label}-${child}`} className="ml-6 flex items-center gap-2 text-sm text-muted-foreground">
-                          <input
-                            type="checkbox"
-                            checked={selectedTreeFilters.includes(child)}
-                            onChange={() => toggleTreeFilter(child)}
-                            className="h-4 w-4 rounded border-input"
-                          />
-                          {child}
-                        </label>
-                      ))}
-                    </div>
-                  ))}
+            {/* Categorias: cada una muestra cuantos productos quedarian al elegirla */}
+            {hasCategories && (
+              <div className="st-panel">
+                <p className="st-panel-title">Categorías</p>
+                <div className="st-options">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory(null)}
+                    className={`st-option ${selectedCategory === null ? 'is-active' : ''}`}
+                  >
+                    <span>Todas</span>
+                    <span className="st-count">{catalogTotal}</span>
+                  </button>
+                  {categories.map((category) => {
+                    const count = categoryCounts[category] ?? 0;
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        disabled={count === 0 && selectedCategory !== category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`st-option ${selectedCategory === category ? 'is-active' : ''}`}
+                      >
+                        <span>{category}</span>
+                        <span className="st-count">{count}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <p className="font-semibold text-foreground">Marcas</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={selectedBrand === null ? 'default' : 'outline'}
-                  onClick={() => setSelectedBrand(null)}
-                  className="rounded-full h-8 px-3 text-xs"
-                >
-                  Todas
-                </Button>
-                {availableBrands.slice(0, 16).map((brand) => (
-                  <Button
-                    key={brand}
-                    variant={selectedBrand === brand ? 'default' : 'outline'}
-                    onClick={() => setSelectedBrand(brand)}
-                    className="rounded-full h-8 px-3 text-xs"
+            {/* Marcas: ordenadas por cantidad, con buscador cuando son muchas */}
+            {availableBrands.length > 0 && (
+              <div className="st-panel">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="st-panel-title">Marcas</p>
+                  <span className="text-xs text-muted-foreground">{availableBrands.length}</span>
+                </div>
+
+                {availableBrands.length >= BRAND_SEARCH_THRESHOLD && (
+                  <div className="relative mt-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={brandSearch}
+                      onChange={(e) => setBrandSearch(e.target.value)}
+                      placeholder="Buscar marca"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                )}
+
+                <div className="st-options mt-2 max-h-72 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBrand(null)}
+                    className={`st-option ${selectedBrand === null ? 'is-active' : ''}`}
                   >
-                    {brand}
-                  </Button>
-                ))}
+                    <span>Todas</span>
+                  </button>
+                  {visibleBrands.map((brand) => {
+                    const count = brandCounts[brand] ?? 0;
+                    return (
+                      <button
+                        key={brand}
+                        type="button"
+                        disabled={count === 0 && selectedBrand !== brand}
+                        onClick={() => setSelectedBrand(brand)}
+                        className={`st-option ${selectedBrand === brand ? 'is-active' : ''}`}
+                      >
+                        <span className="truncate">{brand}</span>
+                        <span className="st-count">{count}</span>
+                      </button>
+                    );
+                  })}
+                  {visibleBrands.length === 0 && (
+                    <p className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      Ninguna marca coincide con «{brandSearch}»
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 pt-1">
+            )}
+
+            <div className="st-panel">
+              <p className="st-panel-title">Otros filtros</p>
+              <div className="flex flex-wrap gap-2 mt-2">
                 <Button
                   variant={onlyOffers ? 'default' : 'outline'}
                   onClick={() => setOnlyOffers((v) => !v)}
@@ -394,9 +413,11 @@ function StoreContent() {
                   </Button>
                 </Link>
               </div>
-              <Button variant="ghost" onClick={resetFilters} className="w-full justify-center">
-                Limpiar todos los filtros
-              </Button>
+              {activeFiltersCount > 0 && (
+                <Button variant="ghost" onClick={resetFilters} className="w-full justify-center mt-3 text-sm">
+                  Limpiar {activeFiltersCount} {activeFiltersCount === 1 ? 'filtro' : 'filtros'}
+                </Button>
+              )}
             </div>
           </aside>
 
@@ -443,28 +464,29 @@ function StoreContent() {
                 </div>
               )}
 
+              {/* Acceso rapido en movil, donde el panel lateral esta oculto.
+                  En escritorio las categorias viven en el panel, con contadores. */}
               {hasCategories && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="w-full overflow-x-auto pb-1">
-                    <div className="flex flex-nowrap items-center gap-2 min-w-max">
+                <div className="lg:hidden w-full overflow-x-auto pb-1">
+                  <div className="flex flex-nowrap items-center gap-2 min-w-max">
+                    <Button
+                      variant={selectedCategory === null ? 'default' : 'outline'}
+                      onClick={() => setSelectedCategory(null)}
+                      className="rounded-full h-8 px-3 text-xs shrink-0"
+                    >
+                      Todos <span className="ml-1.5 opacity-60">{catalogTotal}</span>
+                    </Button>
+                    {categories.map((category) => (
                       <Button
-                        variant={selectedCategory === null ? 'default' : 'outline'}
-                        onClick={() => setSelectedCategory(null)}
-                        className="rounded-full h-8 px-3 text-xs"
+                        key={`quick-${category}`}
+                        variant={selectedCategory === category ? 'default' : 'outline'}
+                        onClick={() => setSelectedCategory(category)}
+                        className="rounded-full h-8 px-3 text-xs shrink-0"
                       >
-                        Todos
+                        {category}
+                        <span className="ml-1.5 opacity-60">{categoryCounts[category] ?? 0}</span>
                       </Button>
-                      {quickCategories.map((category) => (
-                        <Button
-                          key={`quick-${category}`}
-                          variant={selectedCategory === category ? 'default' : 'outline'}
-                          onClick={() => setSelectedCategory(category)}
-                          className="rounded-full h-8 px-3 text-xs"
-                        >
-                          {category}
-                        </Button>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -561,15 +583,33 @@ function StoreContent() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {products.map((product, idx) => (
-                <div key={product.id} className="animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
-                  <ProductCard
-                    product={product}
-                    onQuickView={setQuickViewProduct}
-                    onAddedToCart={handleAddedToCart}
-                  />
-                </div>
-              ))}
+              {isLoadingProducts
+                ? // Esqueletos del mismo tamano que las tarjetas: al filtrar, la
+                  // rejilla no salta ni se queda en blanco.
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={`skeleton-${idx}`} className="st-skeleton-card">
+                      <div className="st-skeleton st-skeleton-img" />
+                      <div className="p-5 flex flex-col gap-3">
+                        <div className="st-skeleton h-4 w-4/5 rounded" />
+                        <div className="st-skeleton h-3 w-full rounded" />
+                        <div className="st-skeleton h-3 w-2/3 rounded" />
+                        <div className="st-skeleton h-9 w-full rounded-full mt-2" />
+                      </div>
+                    </div>
+                  ))
+                : products.map((product, idx) => (
+                    <div
+                      key={product.id}
+                      className="st-card-in"
+                      style={{ animationDelay: `${Math.min(idx, 8) * 45}ms` }}
+                    >
+                      <ProductCard
+                        product={product}
+                        onQuickView={setQuickViewProduct}
+                        onAddedToCart={handleAddedToCart}
+                      />
+                    </div>
+                  ))}
             </div>
 
             {totalResults > PRODUCTS_PER_PAGE && (
@@ -613,20 +653,50 @@ function StoreContent() {
               </div>
             )}
 
-            {!isLoadingProducts && totalResults === 0 && (
-              <div className="text-center py-24">
-                <h3 className="text-3xl font-bold text-foreground mb-4">
-                  No hay productos con esos filtros
+            {/* Fallo de conexion: no es culpa de los filtros, y decirlo evita
+                que el usuario se ponga a cambiarlos sin razon. */}
+            {!isLoadingProducts && loadFailed && (
+              <div className="text-center py-24 max-w-md mx-auto">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                  <X className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-3">
+                  No pudimos cargar el catálogo
                 </h3>
-                <p className="text-xl text-muted-foreground mb-8">
-                  Prueba cambiando categoría, texto o filtros.
+                <p className="text-muted-foreground mb-8 leading-relaxed">
+                  Hubo un problema de conexión. No es por tus filtros. Vuelve a intentarlo
+                  en unos segundos.
                 </p>
                 <Button
-                  onClick={resetFilters}
-                  className="premium-button bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => window.location.reload()}
+                  className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-6"
                 >
-                  Limpiar filtros
+                  Reintentar
                 </Button>
+              </div>
+            )}
+
+            {!isLoadingProducts && !loadFailed && totalResults === 0 && (
+              <div className="text-center py-24 max-w-md mx-auto">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-3">
+                  Sin resultados
+                </h3>
+                <p className="text-muted-foreground mb-8 leading-relaxed">
+                  {searchTerm.trim()
+                    ? <>No encontramos nada para «{searchTerm.trim()}». Prueba con menos palabras o revisa la ortografía.</>
+                    : 'Ninguna combinación de filtros da resultados. Quita alguno para ampliar la búsqueda.'}
+                </p>
+                {activeFiltersCount > 0 && (
+                  <Button
+                    onClick={resetFilters}
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-6"
+                  >
+                    Limpiar {activeFiltersCount} {activeFiltersCount === 1 ? 'filtro' : 'filtros'}
+                  </Button>
+                )}
               </div>
             )}
           </div>

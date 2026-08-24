@@ -1655,3 +1655,220 @@
     display: none;
   }
 }
+
+/* ============================================================
+   TIENDA — panel de filtros
+   ============================================================ */
+
+.st-panel {
+  border-radius: 1.1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 1.1rem;
+}
+
+.st-panel + .st-panel {
+  margin-top: 0.85rem;
+}
+
+.st-panel-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.st-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 0.6rem;
+}
+
+.st-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.22s var(--ease-out-soft);
+}
+
+.st-option:hover:not(:disabled) {
+  background: var(--muted);
+  transform: translateX(2px);
+}
+
+.st-option.is-active {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.st-option:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Contador de resultados de cada faceta */
+.st-count {
+  flex-shrink: 0;
+  min-width: 1.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.st-option.is-active .st-count {
+  background: color-mix(in oklab, var(--primary) 20%, transparent);
+  color: var(--primary);
+}
+
+/* ============================================================
+   TIENDA — carga y entrada de resultados
+   ============================================================ */
+
+.st-skeleton-card {
+  border-radius: 1.4rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.st-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.st-skeleton-img {
+  height: 13rem;
+}
+
+.st-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--background) 70%, transparent),
+    transparent
+  );
+  animation: stShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes stShimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Las tarjetas entran escalonadas al cambiar de filtro o de pagina */
+.st-card-in {
+  opacity: 0;
+  animation: stCardIn 0.5s var(--ease-out-soft) forwards;
+}
+
+@keyframes stCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   VIDA — micro-interacciones compartidas
+   ============================================================ */
+
+/* Subrayado que crece bajo los titulos de seccion al revelarse */
+.ap-title2 {
+  position: relative;
+}
+
+/* Los iconos "respiran" al pasar por encima de su tarjeta */
+.ap-card:hover .ap-icon,
+.ap-service-card:hover .ap-service-icon {
+  animation: apIconNudge 0.55s var(--ease-spring);
+}
+
+@keyframes apIconNudge {
+  0% { transform: scale(1) rotate(0deg); }
+  45% { transform: scale(1.16) rotate(-7deg); }
+  100% { transform: scale(1.1) rotate(-4deg); }
+}
+
+/* Los botones primarios reaccionan al pulsar */
+.ap-btn-press {
+  transition: transform 0.14s var(--ease-out-soft), box-shadow 0.25s ease;
+}
+
+.ap-btn-press:active {
+  transform: scale(0.96);
+}
+
+/* Realce del numero en las cifras animadas */
+.ap-stat-value {
+  transition: color 0.3s ease;
+}
+
+.reveal-block.is-visible .ap-stat-value {
+  animation: apStatPop 0.7s var(--ease-spring) both;
+}
+
+@keyframes apStatPop {
+  0% { opacity: 0; transform: translateY(12px) scale(0.94); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Las tarjetas siguen levemente al cursor */
+.ap-card,
+.ap-service-card,
+.ap-post-card,
+.ap-cert-card {
+  will-change: transform;
+}
+
+/* Enlaces del pie con desplazamiento suave */
+.footer-link {
+  display: inline-block;
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .st-skeleton::after,
+  .st-card-in {
+    animation: none;
+  }
+
+  .st-card-in {
+    opacity: 1;
+  }
+
+  .st-option:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .ap-card:hover .ap-icon,
+  .ap-service-card:hover .ap-service-icon,
+  .reveal-block.is-visible .ap-stat-value {
+    animation: none;
+  }
+}

@@ -49,6 +49,10 @@ export interface ProductsPageResponse {
   categories: string[];
   brands: string[];
   categoryPreviews: CategoryPreview[];
+  /** Cuantos productos quedarian al elegir cada categoria, con los demas filtros aplicados. */
+  categoryCounts?: Record<string, number>;
+  /** Idem para cada marca. */
+  brandCounts?: Record<string, number>;
 }
 
 export const PRODUCTS: Product[] = [];

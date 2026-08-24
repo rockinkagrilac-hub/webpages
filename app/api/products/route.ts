@@ -105,17 +105,47 @@ export async function GET(request: Request) {
       if (product.image) categoryPreviewMap.set(product.category, product.image)
     }
 
+    /**
+     * `skip` permite ignorar una faceta al contar. Los contadores de categorías
+     * se calculan aplicando todos los filtros MENOS el de categoría, que es lo
+     * que hace que el número mostrado junto a cada opción sea el que realmente
+     * se obtendría al elegirla.
+     */
+    const matchesFilters = (
+      product: Product,
+      skip: { category?: boolean; brand?: boolean } = {}
+    ) => {
+      const text = `${product.name} ${product.description} ${product.category}`.toLowerCase()
+      if (pajillasView && !isPajillaToroProduct(product)) return false
+      if (!skip.category && category && product.category !== category) return false
+      if (!skip.brand && brand && !productMatchesBrand(product, brand)) return false
+      if (onlyOffers && !product.inOffer) return false
+      if (treeFilters.length > 0 && !treeFilters.some((token) => text.includes(token))) return false
+      if (!search) return true
+      return text.includes(search)
+    }
+
+    const countBy = (items: Product[], key: (product: Product) => string) => {
+      const counts: Record<string, number> = {}
+      for (const item of items) {
+        const value = key(item)
+        if (value) counts[value] = (counts[value] || 0) + 1
+      }
+      return counts
+    }
+
+    const categoryCounts = countBy(
+      normalizedProducts.filter((product) => matchesFilters(product, { category: true })),
+      (product) => String(product.category || '').trim()
+    )
+
+    const brandCounts = countBy(
+      normalizedProducts.filter((product) => matchesFilters(product, { brand: true })),
+      (product) => getProductBrand(product)
+    )
+
     const filteredProducts = sortProducts(
-      normalizedProducts.filter((product) => {
-        const text = `${product.name} ${product.description} ${product.category}`.toLowerCase()
-        if (pajillasView && !isPajillaToroProduct(product)) return false
-        if (category && product.category !== category) return false
-        if (brand && !productMatchesBrand(product, brand)) return false
-        if (onlyOffers && !product.inOffer) return false
-        if (treeFilters.length > 0 && !treeFilters.some((token) => text.includes(token))) return false
-        if (!search) return true
-        return text.includes(search)
-      }),
+      normalizedProducts.filter((product) => matchesFilters(product)),
       sortBy
     )
 
@@ -133,6 +163,8 @@ export async function GET(request: Request) {
       catalogTotal: normalizedProducts.length,
       categories,
       brands,
+      categoryCounts,
+      brandCounts,
       categoryPreviews: categories.map((itemCategory) => ({
         category: itemCategory,
         image: categoryPreviewMap.get(itemCategory) || '/placeholder.svg',
