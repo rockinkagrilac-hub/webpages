@@ -4,30 +4,41 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Tokens — paleta monótona clara (estilo Apple)
-   Blanco / gris #f5f5f7 / texto #1d1d1f / verde como único acento
+   Tokens — paleta "Tierra": neutros cálidos con verde profundo
+   ------------------------------------------------------------
+   La paleta anterior era blanco puro + gris frío + verde brillante:
+   la fórmula de Apple, pensada para vender aluminio en tiendas blancas.
+   Aquí se venden equipos que trabajan con animales, en tierra y bajo el sol,
+   y esa frialdad se notaba.
+   Ahora los neutros llevan un punto cálido (tono ~80) y el verde es más
+   oliva. El ocre entra como segundo acento, siempre puntual.
+
+   El resto del sistema no cambia: mismo aire, misma tipografía,
+   mismas animaciones.
    ============================================================ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.006 150);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.006 150);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.006 150);
-  --primary: oklch(0.55 0.14 155);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.966 0.003 150);
-  --secondary-foreground: oklch(0.3 0.01 150);
-  --muted: oklch(0.966 0.003 150);
-  --muted-foreground: oklch(0.51 0.008 150);
-  --accent: oklch(0.94 0.03 155);
-  --accent-foreground: oklch(0.38 0.09 155);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.906 0.002 150);
-  --input: oklch(0.906 0.002 150);
-  --ring: oklch(0.55 0.14 155);
-  --chart-1: oklch(0.55 0.14 155);
+  --background: oklch(0.985 0.006 85);
+  --foreground: oklch(0.24 0.012 60);
+  --card: oklch(0.995 0.004 85);
+  --card-foreground: oklch(0.24 0.012 60);
+  --popover: oklch(0.995 0.004 85);
+  --popover-foreground: oklch(0.24 0.012 60);
+  --primary: oklch(0.46 0.1 145);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.955 0.012 82);
+  --secondary-foreground: oklch(0.32 0.015 70);
+  --muted: oklch(0.955 0.012 82);
+  --muted-foreground: oklch(0.48 0.016 70);
+  --accent: oklch(0.93 0.035 140);
+  --accent-foreground: oklch(0.36 0.08 145);
+  --destructive: oklch(0.55 0.19 30);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --border: oklch(0.9 0.012 80);
+  --input: oklch(0.9 0.012 80);
+  --ring: oklch(0.46 0.1 145);
+  /** Segundo acento cálido. Uso puntual: nunca como fondo de sección. */
+  --ochre: oklch(0.64 0.115 68);
+  --chart-1: oklch(0.46 0.1 145);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
@@ -287,7 +298,7 @@
 .ap-card:hover {
   transform: translateY(-5px);
   border-color: oklch(0.86 0.01 150);
-  box-shadow: 0 24px 50px rgba(29, 29, 31, 0.09);
+  box-shadow: 0 24px 50px rgba(42, 34, 26, 0.09);
 }
 
 .ap-icon {
@@ -326,7 +337,7 @@
 .ap-segment button.is-active {
   background: var(--card);
   color: var(--foreground);
-  box-shadow: 0 2px 10px rgba(29, 29, 31, 0.1);
+  box-shadow: 0 2px 10px rgba(42, 34, 26, 0.1);
 }
 
 /* Inputs de formulario */
@@ -440,13 +451,13 @@
   z-index: 50;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px) saturate(1.6);
-  border-bottom: 1px solid rgba(29, 29, 31, 0.06);
+  border-bottom: 1px solid rgba(42, 34, 26, 0.06);
   transition: box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .site-header.is-scrolled {
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 26px rgba(29, 29, 31, 0.06);
+  box-shadow: 0 8px 26px rgba(42, 34, 26, 0.06);
 }
 
 .site-header--dark {
@@ -551,18 +562,18 @@
   left: 0;
   right: 0;
   height: 50.5%;
-  background: #ffffff;
+  background: var(--background);
   transition: transform 0.9s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
 .ap-intro-panel-top {
   top: 0;
-  box-shadow: 0 1px 0 rgba(29, 29, 31, 0.08);
+  box-shadow: 0 1px 0 rgba(42, 34, 26, 0.08);
 }
 
 .ap-intro-panel-bottom {
   bottom: 0;
-  box-shadow: 0 -1px 0 rgba(29, 29, 31, 0.08);
+  box-shadow: 0 -1px 0 rgba(42, 34, 26, 0.08);
 }
 
 .ap-intro.is-open .ap-intro-panel-top {
@@ -593,7 +604,7 @@
 .ap-intro-line {
   width: min(60vw, 420px);
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(29, 29, 31, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(42, 34, 26, 0.25), transparent);
   transform: scaleX(0);
   animation: apLineIn 0.55s 0.1s var(--ease-out-soft) forwards;
 }
@@ -609,7 +620,7 @@
   font-weight: 700;
   font-size: clamp(1.9rem, 6.6vw, 4.2rem);
   letter-spacing: -0.03em;
-  color: #1d1d1f;
+  color: var(--foreground);
 }
 
 .ap-intro-word span {
@@ -852,19 +863,22 @@
 }
 
 /* --- Contexto oscuro: redefine tokens, no duplica componentes --- */
+/* Anclas oscuras. Antes eran negro-verde frío; ahora marrón-oliva, para que
+   el contraste con las secciones claras sea de temperatura y no de mundo. */
 .ap-dark {
-  --background: oklch(0.16 0.006 155);
-  --foreground: oklch(0.98 0.002 150);
-  --card: oklch(0.21 0.008 155);
-  --card-foreground: oklch(0.98 0.002 150);
-  --muted: oklch(0.24 0.008 155);
-  --muted-foreground: oklch(0.74 0.012 150);
-  --border: oklch(0.31 0.01 155);
-  --input: oklch(0.34 0.012 155);
-  --primary: oklch(0.72 0.16 152);
-  --primary-foreground: oklch(0.16 0.02 155);
-  --accent: oklch(0.28 0.03 155);
-  background: #0a0d0c;
+  --background: oklch(0.2 0.018 70);
+  --foreground: oklch(0.97 0.008 85);
+  --card: oklch(0.25 0.02 70);
+  --card-foreground: oklch(0.97 0.008 85);
+  --muted: oklch(0.28 0.02 70);
+  --muted-foreground: oklch(0.76 0.016 80);
+  --border: oklch(0.35 0.022 70);
+  --input: oklch(0.37 0.022 70);
+  --primary: oklch(0.7 0.135 145);
+  --primary-foreground: oklch(0.19 0.02 70);
+  --accent: oklch(0.31 0.035 145);
+  --ochre: oklch(0.72 0.12 70);
+  background: #17120d;
   color: var(--foreground);
 }
 
@@ -941,8 +955,8 @@
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(6, 10, 9, 0.78) 0%, rgba(6, 10, 9, 0.42) 42%, rgba(6, 10, 9, 0.92) 100%),
-    linear-gradient(90deg, rgba(6, 10, 9, 0.7) 0%, transparent 55%);
+    linear-gradient(180deg, rgba(23, 18, 13, 0.78) 0%, rgba(23, 18, 13, 0.42) 42%, rgba(23, 18, 13, 0.92) 100%),
+    linear-gradient(90deg, rgba(23, 18, 13, 0.7) 0%, transparent 55%);
 }
 
 .ap-hero-scroll {
@@ -1164,7 +1178,7 @@
 .ap-project-veil {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(6, 10, 9, 0) 35%, rgba(6, 10, 9, 0.86) 100%);
+  background: linear-gradient(180deg, rgba(23, 18, 13, 0) 35%, rgba(23, 18, 13, 0.86) 100%);
 }
 
 .ap-project-body {
@@ -1386,7 +1400,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #0a0d0c;
+  background: #17120d;
 }
 
 /* De ventana recortada en el centro a sangrado completo.
@@ -1414,7 +1428,7 @@
 .ap-pin-veil {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(6, 10, 9, 0.55) 0%, rgba(6, 10, 9, 0.15) 45%, rgba(6, 10, 9, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(23, 18, 13, 0.55) 0%, rgba(23, 18, 13, 0.15) 45%, rgba(23, 18, 13, 0.9) 100%);
   opacity: calc(0.35 + var(--p, 0) * 0.65);
 }
 

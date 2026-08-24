@@ -113,7 +113,7 @@ export function OffersCarousel({ products }: OffersCarouselProps) {
             className={`h-2 rounded-full transition-all ${
               i === currentIndex
                 ? 'bg-primary w-8'
-                : 'bg-gray-300 w-2 hover:bg-gray-400'
+                : 'bg-border w-2 hover:bg-muted-foreground'
             }`}
           />
         ))}

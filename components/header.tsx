@@ -57,7 +57,7 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
             <span
               className={`hidden sm:inline bg-clip-text text-transparent font-bold ${
                 isDark
-                  ? 'bg-gradient-to-r from-emerald-300 to-lime-200'
+                  ? 'bg-gradient-to-r from-primary to-[--ochre]'
                   : 'bg-gradient-to-r from-primary to-secondary'
               }`}
             >
@@ -120,7 +120,7 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
 
             <button
               className={`md:hidden p-2 rounded-lg transition-colors ${
-                isDark ? 'text-emerald-50 hover:bg-white/10' : 'hover:bg-muted'
+                isDark ? 'text-foreground hover:bg-white/10' : 'hover:bg-muted'
               }`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? 'Cerrar menu' : 'Abrir menu'}
@@ -143,10 +143,10 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
                     className={`py-2.5 px-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
                       isActive(item.href)
                         ? isDark
-                          ? 'bg-emerald-400/10 text-emerald-300 font-semibold'
+                          ? 'bg-primary/15 text-primary font-semibold'
                           : 'bg-primary/10 text-primary font-semibold'
                         : isDark
-                        ? 'text-emerald-50/85 hover:bg-white/5'
+                        ? 'text-foreground/80 hover:bg-white/5'
                         : 'hover:bg-muted'
                     }`}
                   >
@@ -159,10 +159,10 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
                   className={`py-2.5 px-3 rounded-lg transition-colors duration-200 text-sm font-medium flex items-center justify-between ${
                     isActive('/cart')
                       ? isDark
-                        ? 'bg-emerald-400/10 text-emerald-300 font-semibold'
+                        ? 'bg-primary/15 text-primary font-semibold'
                         : 'bg-primary/10 text-primary font-semibold'
                       : isDark
-                      ? 'text-emerald-50/85 hover:bg-white/5'
+                      ? 'text-foreground/80 hover:bg-white/5'
                       : 'hover:bg-muted'
                   }`}
                 >
