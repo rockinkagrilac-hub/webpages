@@ -158,6 +158,7 @@ function StoreContent() {
         params.set('paginated', '1');
         params.set('page', String(currentPage));
         params.set('perPage', String(PRODUCTS_PER_PAGE));
+        params.set('paginated', '1');
         params.set('sortBy', sortBy);
         if (deferredSearch) params.set('search', deferredSearch);
         if (selectedCategory) params.set('category', selectedCategory);

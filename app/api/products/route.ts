@@ -55,7 +55,7 @@ function sortProducts(products: Product[], sortBy: string) {
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
-    const wantsPagination = url.searchParams.get('paginated') === '1'
+    const wantsPagination = url.searchParams.get('paginated') === '1' || url.searchParams.has('page') || url.searchParams.has('perPage') || url.searchParams.has('category') || url.searchParams.has('brand') || url.searchParams.has('search') || url.searchParams.has('onlyOffers') || url.searchParams.has('pajillas')
     const search = url.searchParams.get('search')?.trim().toLowerCase() || ''
     const category = url.searchParams.get('category')?.trim() || ''
     const brand = url.searchParams.get('brand')?.trim() || ''
