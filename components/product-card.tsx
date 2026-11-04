@@ -55,7 +55,7 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
       onClick={() => router.push(`/product/${product.id}`)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="ap-card group h-full flex flex-col overflow-hidden cursor-pointer"
+      className="ap-card ap-spotlight group h-full flex flex-col overflow-hidden cursor-pointer"
     >
       <div className="relative w-full h-52 sm:h-56 bg-muted overflow-hidden">
         <Image
@@ -64,6 +64,7 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
           fill
           loading="lazy"
           quality={70}
+          unoptimized={(images[currentImageIndex] || '').startsWith('data:')}
           sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
           onLoad={() => setImageLoaded(true)}
           className={`object-cover transition-all duration-700 ease-out ${
@@ -126,7 +127,11 @@ export function ProductCard({ product, onQuickView, onAddedToCart }: ProductCard
             variant="outline"
             onClick={(e) => {
               e.stopPropagation();
-              onQuickView?.(product);
+              if (onQuickView) {
+                onQuickView(product);
+              } else {
+                router.push(`/product/${product.id}`);
+              }
             }}
             className="rounded-full text-sm"
           >

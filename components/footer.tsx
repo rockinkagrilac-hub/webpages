@@ -34,7 +34,7 @@ export function Footer() {
             <h4 className="text-sm font-semibold mb-4 text-foreground">Productos</h4>
             <ul className="space-y-2.5 text-sm text-muted-foreground">
               <li><Link href="/store" className="footer-link">Catalogo Completo</Link></li>
-              <li><Link href="/store#categories" className="footer-link">Categorias</Link></li>
+              <li><Link href="/store#products" className="footer-link">Categorias</Link></li>
               <li><Link href="/about" className="footer-link">Sobre Nosotros</Link></li>
             </ul>
           </div>
@@ -71,9 +71,13 @@ export function Footer() {
           <p className="text-muted-foreground text-xs">
             © {new Date().getFullYear()} Rockink IMM. Todos los derechos reservados.
           </p>
-          <p className="text-muted-foreground/70 text-xs">
-            Ingenieria ganadera · Innovacion y calidad
-          </p>
+          <div className="flex items-center gap-3 text-muted-foreground/70 text-xs">
+            <span>Ingenieria ganadera · Innovacion y calidad</span>
+            <span>·</span>
+            <Link href="/admin/login" className="hover:text-foreground transition-colors">
+              Acceso interno
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

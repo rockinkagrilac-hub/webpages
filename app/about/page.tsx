@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
-import { CartProvider } from '@/lib/cart-context';
 import { useScrollFx, useRevealOnScroll } from '@/lib/use-scroll-fx';
 import {
   Award,
@@ -144,7 +143,7 @@ function AboutContent() {
             playsInline
             preload="none"
             aria-hidden="true"
-            poster="/1.webp"
+            poster="/showcase-ordeno.jpg"
           >
             <source src="/hero-mobile.mp4" type="video/mp4" media="(max-width: 991px)" />
             <source src="/hero-desktop.mp4" type="video/mp4" />
@@ -296,8 +295,6 @@ function AboutContent() {
 
 export default function AboutPage() {
   return (
-    <CartProvider>
       <AboutContent />
-    </CartProvider>
   );
 }

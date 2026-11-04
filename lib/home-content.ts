@@ -24,30 +24,51 @@
  */
 export const IMAGES = {
   /** Primer fotograma del video del hero. Se ve mientras el video carga. */
-  heroPoster: '/1.webp',
+  heroPoster: '/galeria-1.jpg?v=4',
   /**
    * Foto de la seccion con scroll fijo. Es LA imagen del sitio: llega a ocupar
    * la pantalla completa. Importante: el motivo debe estar CENTRADO, porque al
    * inicio se ve recortada en una ventana central y se va abriendo.
    */
-  showcase: '/3.webp',
+  showcase: '/showcase-ordeno.jpg?v=4',
   /** Una foto vertical por proyecto, en el mismo orden que PROJECTS. */
-  projects: ['/3.webp', '/1.webp', '/2.webp'],
+  projects: ['/proyecto-ordeno.jpg?v=4', '/proyecto-genetica.jpg?v=4', '/proyecto-manejo.jpg?v=4'],
   /**
    * Galeria. Con 6 o mas fotos el diseno cambia solo a mosaico;
    * con menos, se muestra en cuadricula regular.
    */
-  gallery: ['/3.webp', '/1.webp', '/2.webp'],
+  gallery: [
+    '/galeria-1.jpg?v=4',
+    '/galeria-2.jpg?v=4',
+    '/galeria-3.jpg?v=4',
+    '/galeria-4.jpg?v=4',
+    '/galeria-5.jpg?v=4',
+    '/galeria-6.jpg?v=4',
+  ],
 };
 
 export const HERO = {
-  overline: 'Ingenieria Ganadera',
+  overline: 'Ingenieria Ganadera · Arequipa, Peru',
   title: 'Precision que se mide en el campo.',
   description:
     'Ingenieria, equipamiento y soporte tecnico para operaciones ganaderas que no pueden detenerse.',
-  primaryCta: { label: 'Hablar con un asesor', href: '/contacto' },
-  secondaryCta: { label: 'Conocer la empresa', href: '/about' },
+  primaryCta: { label: 'Explorar catalogo tecnico', href: '/store' },
+  secondaryCta: { label: 'Hablar con un asesor', href: '/contacto' },
+  pills: [
+    'Equipos y repuestos originales',
+    'Despacho desde Arequipa a todo el Peru',
+    'Soporte tecnico en campo',
+  ],
 };
+
+export const GALLERY_META = [
+  { tag: 'Ordeño Portatil', caption: 'Ordeñadoras de carrito y cantaro listas para trabajo diario en establo' },
+  { tag: 'Repuestos y Vacio', caption: 'Pulsadores, manometros y pezoneras de recambio para un ordeño parejo' },
+  { tag: 'Control en Corral', caption: 'Detectores portatiles de mastitis y preñez para diagnostico directo' },
+  { tag: 'Inseminacion', caption: 'Termos criogenicos, pajillas y pistolas de inseminacion en campo' },
+  { tag: 'Higiene y Rutina', caption: 'Vasos selladores, mangueras lecheras y cepillos de limpieza diaria' },
+  { tag: 'Despacho a Fundo', caption: 'Entrega de equipos, aretes e insumos directamente al productor' },
+];
 
 /** Seccion de scroll fijo: el texto cambia mientras la imagen se abre a pantalla completa. */
 export const SHOWCASE = {
@@ -71,39 +92,51 @@ export const STATS = [
 export const SERVICES = [
   {
     icon: 'Droplets',
-    title: 'Sistemas de ordeño',
+    title: 'Maquinas de ordeño Melasty',
+    image: '/proyecto-ordeno.jpg?v=4',
+    href: '/store?brand=Melasty',
     description:
-      'Equipos, pezoneras, pulsadores y repuestos para salas de ordeño. Seleccion segun tamano de hato y rutina real de trabajo.',
+      'Maquinas de ordeño portatiles Melasty de 1 y 2 bajadas, colectores, pezoneras, pulsadores y repuestos originales para establo.',
   },
   {
     icon: 'Dna',
-    title: 'Genetica bovina',
+    title: 'Genetica e inseminacion',
+    image: '/proyecto-genetica.jpg?v=4',
+    href: '/store',
     description:
-      'Material genetico, pajillas e insumos de inseminacion con cadena de frio y trazabilidad.',
+      'Material genetico CRV, pajillas, termos criogenicos, descongeladores e insumos de inseminacion con cadena de frio.',
   },
   {
     icon: 'Scissors',
-    title: 'Esquila y manejo',
+    title: 'Maquinas de esquila Lister',
+    image: '/proyecto-manejo.jpg?v=4',
+    href: '/store?brand=Lister',
     description:
-      'Maquinas de esquila, peines, cuchillas y herramientas de manejo animal de marcas internacionales.',
+      'Maquinas de esquila y recorte Lister (Fusion, Legend, Star), peines, cuchillas y herramientas originales de manejo animal.',
   },
   {
     icon: 'Wrench',
-    title: 'Repuestos y mantenimiento',
+    title: 'Bombas y repuestos',
+    image: '/galeria-2.jpg?v=2',
+    href: '/store',
     description:
-      'Stock de repuestos criticos para que una falla no detenga la operacion mas de lo necesario.',
+      'Stock de repuestos criticos, aceiteros, colectores y bombas de vacio para que una falla no detenga la operacion.',
   },
   {
     icon: 'ClipboardCheck',
-    title: 'Asesoria tecnica',
+    title: 'Instrumental y diagnostico',
+    image: '/galeria-3.jpg?v=2',
+    href: '/store',
     description:
-      'Acompanamiento para elegir el equipo correcto segun la necesidad real, no segun el catalogo.',
+      'Detectores de preñez, control de mastitis y equipos de medicion veterinaria para decisiones con datos.',
   },
   {
     icon: 'Truck',
-    title: 'Logistica y despacho',
+    title: 'Logistica y despacho nacional',
+    image: '/galeria-6.jpg?v=2',
+    href: '/contacto',
     description:
-      'Despacho desde Arequipa a todo el Peru, con seguimiento del pedido por WhatsApp.',
+      'Despacho desde Arequipa a todo el Peru, con embalaje seguro y seguimiento directo del pedido por WhatsApp.',
   },
 ];
 
@@ -137,25 +170,25 @@ export const PROCESS = [
 /** ⚠️ Casos ilustrativos. Reemplazar por proyectos reales antes de publicar. */
 export const PROJECTS = [
   {
-    category: 'Sala de ordeño',
-    title: 'Equipamiento de sala de ordeño',
+    category: 'Ordeño Melasty',
+    title: 'Maquinas de ordeño Melasty',
     location: 'Arequipa',
     description:
-      'Implementacion de linea de ordeño con seleccion de pulsadores y pezoneras segun el hato.',
+      'Entrega y puesta en marcha de ordeñadoras portatiles Melasty con colectores, pulsadores y repuestos originales.',
   },
   {
-    category: 'Genetica',
+    category: 'Genetica CRV',
     title: 'Programa de mejoramiento genetico',
     location: 'Sur del Peru',
     description:
       'Abastecimiento de material genetico e insumos de inseminacion con cadena de frio.',
   },
   {
-    category: 'Manejo',
-    title: 'Renovacion de equipos de esquila',
+    category: 'Esquila Lister',
+    title: 'Maquinas de esquila Lister',
     location: 'Sierra sur',
     description:
-      'Reemplazo de maquinas y consumibles para reducir tiempos de faena en campana.',
+      'Equipamiento con esquiladoras y recortadoras Lister, peines y cuchillas para campana y manejo ganadero.',
   },
 ];
 

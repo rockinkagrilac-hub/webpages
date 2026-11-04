@@ -1,13 +1,11 @@
-﻿'use client';
+'use client';
 
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { PRODUCTS, PHONE_NUMBERS, Product } from '@/lib/data';
+import { PRODUCTS, Product } from '@/lib/data';
 import { useCart } from '@/lib/cart-context';
-import { CartProvider } from '@/lib/cart-context';
-import { Trash2, Plus, Minus, MessageCircle } from 'lucide-react';
+import { Trash2, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -18,18 +16,26 @@ function CartContent() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products', { cache: 'no-store' });
+        const response = await fetch('/api/products', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error('Error API');
         const data = (await response.json()) as Product[];
-        setAllProducts(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setAllProducts(data);
+        }
       } catch {
-        setAllProducts(PRODUCTS);
+        /* mantiene fallback local */
       }
     };
 
     void loadProducts();
+    return () => controller.abort();
   }, []);
 
   const cartProducts = useMemo(
@@ -49,9 +55,9 @@ function CartContent() {
   ).size;
 
   const whatsappMessage = encodeURIComponent(
-    `Hola, me gustaría ordenar los siguientes productos:\n\n${cartProducts
-      .map((cp) => `- ${cp.product?.name || 'Producto no disponible'} (Cantidad: ${cp.quantity})`)
-      .join('\n')}\n\nTotal de artículos: ${totalItems}`
+    `Hola Rockink IMM, solicito cotizacion de los siguientes equipos:\n\n${cartProducts
+      .map((cp) => `- ${cp.product?.name || 'Equipo'} (Cantidad: ${cp.quantity})`)
+      .join('\n')}\n\nTotal de unidades: ${totalItems}`
   );
 
   const handleCheckout = () => {
@@ -67,179 +73,190 @@ function CartContent() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <section className="max-w-5xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-primary mb-8">Mi Carrito</h1>
+      <main className="ap-shell pt-32 pb-24">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+          <div>
+            <p className="ap-overline">Solicitud de cotizacion</p>
+            <h1 className="ap-title2 mt-3">Tu carrito de equipos</h1>
+          </div>
+          <Link href="/store" className="ap-link text-sm">
+            <ArrowLeft className="w-4 h-4" />
+            Seguir explorando el catalogo
+          </Link>
+        </div>
 
         {items.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-muted-foreground text-lg mb-4">Tu carrito está vacío</p>
-              <Link href="/">
-                <Button className="bg-primary hover:bg-primary/90">Ir de compras</Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <div className="ap-card p-12 sm:p-16 text-center max-w-xl mx-auto">
+            <span className="ap-service-icon mx-auto mb-5">
+              <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
+            </span>
+            <h2 className="text-xl font-semibold text-foreground">Tu carrito esta vacio</h2>
+            <p className="text-sm text-muted-foreground mt-2 mb-8">
+              Agrega equipos desde nuestro catalogo para solicitar una cotizacion directa por WhatsApp.
+            </p>
+            <Link href="/store">
+              <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base font-semibold">
+                Explorar equipos
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.55fr_0.9fr] gap-8 items-start">
+            <div className="space-y-4">
               {cartProducts.map((cp) => (
-                <Card key={cp.productId} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex gap-4">
-                      <div className="relative w-20 h-20 bg-muted rounded flex-shrink-0">
-                        {cp.product && (
-                          <Image
-                            src={cp.product.image || '/placeholder.svg'}
-                            alt={cp.product.name}
-                            fill
-                            className="object-cover rounded"
-                          />
-                        )}
-                      </div>
+                <article key={cp.productId} className="ap-card p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <Link
+                      href={`/product/${cp.productId}`}
+                      className="relative w-20 h-20 sm:w-24 sm:h-24 bg-muted rounded-xl overflow-hidden border border-border shrink-0"
+                    >
+                      {cp.product && (
+                        <Image
+                          src={cp.product.image || '/placeholder.svg'}
+                          alt={cp.product.name}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      )}
+                    </Link>
 
-                      <div className="flex-grow min-w-0">
-                        <Link href={`/product/${cp.productId}`}>
-                          <h3 className="font-bold text-primary hover:text-secondary cursor-pointer line-clamp-2">
-                            {cp.product?.name || 'Producto no disponible'}
-                          </h3>
-                        </Link>
-                        <p className="text-sm text-muted-foreground mt-1">{cp.product?.category || 'Sin categoría'}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          {cp.product?.specifications?.[0] && (
-                            <span className="text-xs text-muted-foreground line-clamp-1">
-                              {cp.product.specifications[0]}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(cp.productId, cp.quantity - 1)}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="w-8 text-center font-semibold">{cp.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(cp.productId, cp.quantity + 1)}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(cp.productId)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </Button>
+                    <div className="flex-grow min-w-0">
+                      <span className="pd-badge" data-tone="primary">
+                        {cp.product?.category || 'Equipo'}
+                      </span>
+                      <Link href={`/product/${cp.productId}`}>
+                        <h3 className="mt-2 font-semibold text-foreground hover:text-primary transition-colors line-clamp-2">
+                          {cp.product?.name || 'Equipo seleccionado'}
+                        </h3>
+                      </Link>
+                      {cp.product?.specifications?.[0] && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                          {cp.product.specifications[0]}
+                        </p>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
+                      <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted p-1">
+                        <button
+                          type="button"
+                          aria-label="Disminuir cantidad"
+                          onClick={() => updateQuantity(cp.productId, cp.quantity - 1)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-foreground hover:bg-background transition-colors"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-8 text-center text-sm font-semibold text-foreground">
+                          {cp.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Aumentar cantidad"
+                          onClick={() => updateQuantity(cp.productId, cp.quantity + 1)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-foreground hover:bg-background transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        aria-label="Eliminar producto"
+                        onClick={() => removeItem(cp.productId)}
+                        className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
               ))}
             </div>
 
-            <div className="space-y-4">
-              <Card className="border-accent border-2">
-                <CardContent className="pt-6">
-                  <div className="mb-4 rounded-lg border border-border p-3 bg-background">
-                    <p className="text-sm font-semibold text-foreground mb-2">Resumen del pedido</p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <p className="text-muted-foreground">Productos:</p>
-                      <p className="font-semibold text-right">{totalProducts}</p>
-                      <p className="text-muted-foreground">Unidades:</p>
-                      <p className="font-semibold text-right">{totalItems}</p>
-                      <p className="text-muted-foreground">Categorías:</p>
-                      <p className="font-semibold text-right">{categoriesCount}</p>
-                    </div>
-                  </div>
+            <aside className="ap-card p-6 sm:p-7 lg:sticky lg:top-28 space-y-6">
+              <div>
+                <p className="ap-overline">Resumen</p>
+                <h2 className="text-xl font-semibold text-foreground mt-2">Solicitud de cotizacion</h2>
+              </div>
 
-                  <div className="mb-4 p-3 bg-accent/10 rounded">
-                    <p className="text-sm font-semibold text-accent mb-2">INFORMACIÓN DE CONTACTO</p>
-                    <p className="text-2xl font-bold text-primary mb-1">{totalItems} artículos</p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Te asignamos el contacto por volumen de pedido.
-                    </p>
+              <div className="rounded-xl border border-border bg-muted p-4 space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Referencias distintas</span>
+                  <span className="font-semibold text-foreground">{totalProducts}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total de unidades</span>
+                  <span className="font-semibold text-foreground">{totalItems}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Lineas tecnicas</span>
+                  <span className="font-semibold text-foreground">{categoriesCount}</span>
+                </div>
+              </div>
 
-                    {totalItems <= 10 && (
-                      <div className="text-sm text-foreground">
-                        <p className="font-semibold mb-1">Rango: 1-10 productos</p>
-                        <p className="text-lg font-bold text-primary">{PHONE_NUMBERS.tier1}</p>
-                      </div>
-                    )}
-                    {totalItems > 10 && totalItems <= 50 && (
-                      <div className="text-sm text-foreground">
-                        <p className="font-semibold mb-1">Rango: 11-50 productos</p>
-                        <p className="text-lg font-bold text-primary">{PHONE_NUMBERS.tier2}</p>
-                      </div>
-                    )}
-                    {totalItems > 50 && (
-                      <div className="text-sm text-foreground">
-                        <p className="font-semibold mb-1">Rango: 50+ productos</p>
-                        <p className="text-lg font-bold text-primary">{PHONE_NUMBERS.tier3}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground mb-4">
-                    El número de WhatsApp cambia según la cantidad de productos en tu carrito.
-                  </p>
-
-                  <Button
-                    onClick={() => setShowConfirm(true)}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    Contactar por WhatsApp
-                  </Button>
-
-                  <Button variant="outline" onClick={clearCart} className="w-full mt-2">
-                    Limpiar carrito
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Link href="/">
-                <Button variant="outline" className="w-full bg-transparent">
-                  Continuar comprando
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="max-w-md w-full">
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-primary mb-4">Confirmar orden</h2>
-              <p className="text-foreground mb-6">
-                Se abrirá WhatsApp con el número <strong>{phoneNumber}</strong> para continuar con tu compra de <strong>{totalItems}</strong> artículos.
-              </p>
-
-              <div className="bg-blue-50 border border-blue-200 p-3 rounded mb-6">
-                <p className="text-sm text-blue-800">
-                  Tus datos de la orden se enviarán automáticamente. Luego podrás comunicarte directamente con nuestro equipo de ventas.
+              <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  Atencion directa de ingenieria
+                </p>
+                <p className="text-lg font-bold text-foreground mt-1">{phoneNumber}</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Tu lista de equipos se enviara lista por WhatsApp para cotizar disponibilidad, despacho y puesta en marcha.
                 </p>
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowConfirm(false)} className="flex-1">
-                  Cancelar
+              <div className="space-y-2.5">
+                <Button
+                  onClick={() => setShowConfirm(true)}
+                  className="w-full rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-base"
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Solicitar cotizacion por WhatsApp
                 </Button>
-                <Button onClick={handleCheckout} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Abrir WhatsApp
+
+                <Button
+                  variant="outline"
+                  onClick={clearCart}
+                  className="w-full rounded-full border-border text-muted-foreground hover:text-foreground"
+                >
+                  Vaciar carrito
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </aside>
+          </div>
+        )}
+      </main>
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="ap-card max-w-md w-full p-6 sm:p-8 space-y-5">
+            <div>
+              <p className="ap-overline">Confirmacion</p>
+              <h2 className="text-2xl font-bold text-foreground mt-2">Enviar pedido por WhatsApp</h2>
+            </div>
+
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Se abrira WhatsApp con nuestro equipo comercial (<strong className="text-foreground">{phoneNumber}</strong>) con el detalle de tus{' '}
+              <strong className="text-foreground">{totalItems}</strong> unidades seleccionadas.
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 rounded-full"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCheckout}
+                className="flex-1 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Abrir WhatsApp
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -249,9 +266,5 @@ function CartContent() {
 }
 
 export default function CartPage() {
-  return (
-    <CartProvider>
-      <CartContent />
-    </CartProvider>
-  );
+  return <CartContent />;
 }

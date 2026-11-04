@@ -72,11 +72,10 @@ export function useScrollFx() {
   }, []);
 }
 
-/** Observa [data-reveal] y anade .is-visible una sola vez (sin parpadeo). */
+/** Observa [data-reveal] y anade .is-visible una sola vez (sin parpadeo), incluso en nodos montados dinamicamente. */
 export function useRevealOnScroll() {
   useEffect(() => {
-    const revealElements = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
-    if (revealElements.length === 0) return;
+    const observed = new WeakSet<Element>();
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -87,10 +86,49 @@ export function useRevealOnScroll() {
           }
         });
       },
-      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' }
+      { threshold: 0.05, rootMargin: '0px 0px -4% 0px' }
     );
 
-    revealElements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
+    const scan = () => {
+      document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)').forEach((el) => {
+        if (!observed.has(el)) {
+          observed.add(el);
+          observer.observe(el);
+        }
+      });
+    };
+
+    scan();
+
+    const mutationObserver = new MutationObserver(() => scan());
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      mutationObserver.disconnect();
+      observer.disconnect();
+    };
+  }, []);
+}
+
+
+/**
+ * Brillo suave que sigue al cursor sobre tarjetas con `.ap-spotlight`.
+ * Escribe `--mx` y `--my` en cada tarjeta usando delegacion de eventos.
+ */
+export function useSpotlight() {
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) return;
+
+    const onPointerMove = (event: PointerEvent) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('.ap-spotlight');
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      target.style.setProperty('--mx', `${Math.round(event.clientX - rect.left)}px`);
+      target.style.setProperty('--my', `${Math.round(event.clientY - rect.top)}px`);
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onPointerMove);
   }, []);
 }

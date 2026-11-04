@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 110" fill="none">
+  <!-- CRV official-style wordmark & bull-head swoosh tightly cropped -->
+  <g transform="translate(18, 18)">
+    <text x="0" y="60" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="68" letter-spacing="-2" fill="#003A70">CRV</text>
+    <!-- Red & Blue stylized cattle horn / swoosh -->
+    <path d="M168 18 C186 18, 204 28, 214 44 C200 38, 185 38, 172 44 Z" fill="#0072CE"/>
+    <path d="M222 10 C236 16, 246 28, 250 42 C236 32, 224 26, 210 24 Z" fill="#003A70"/>
+    <path d="M174 58 C202 58, 232 46, 266 22 C254 50, 226 68, 182 68 Z" fill="#E31B23"/>
+    <text x="2" y="82" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="13" letter-spacing="3.5" fill="#5A6B7C">BETTER COWS · BETTER LIFE</text>
+  </g>
+</svg>
+

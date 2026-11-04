@@ -1,4 +1,4 @@
-﻿export interface Product {
+export interface Product {
   id: string;
   name: string;
   description: string;
@@ -59,8 +59,11 @@ export const PRODUCTS: Product[] = [];
 
 export const DEFAULT_BRANDS: Brand[] = [
   { id: '1', name: 'Lister', logo: 'https://static1.squarespace.com/static/5e8c3085abdf3f0f0c45b6dc/t/639093e981ece801a7d9c4c6/1775725499595/' },
-  { id: '2', name: 'CRV', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJeb9hGt6c4-BhPAl6p34PivNItvfAQ2NP4g&s' },
-  { id: '3', name: 'Melasty', logo: 'https://pbs.twimg.com/profile_images/1354803880580706310/k9_Ijr_K_400x400.jpg' },
+  { id: '2', name: 'CRV', logo: '/brands/crv.svg' },
+  { id: '3', name: 'Melasty', logo: '/brands/melasty.svg' },
+  { id: '4', name: 'Draminski', logo: '/brands/draminski.svg' },
+  { id: '5', name: 'Cito', logo: '/brands/cito.svg' },
+  { id: '6', name: 'Evial', logo: '/brands/evial.svg' },
 ];
 
 export const DEFAULT_HERO_SLIDES: HeroSlide[] = [

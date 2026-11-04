@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { CartProvider } from '@/lib/cart-context'
 import './globals.css'
 
 const geist = Geist({
@@ -33,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="es" className={geist.variable}>
       <body className="font-sans antialiased">
-        {children}
+        {/* Un solo carrito para todo el sitio: antes cada página montaba el suyo
+            y el contador del header parpadeaba en cero al navegar. */}
+        <CartProvider>{children}</CartProvider>
         <Analytics />
       </body>
     </html>

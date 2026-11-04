@@ -5,6 +5,7 @@ import {
   SiteConfig,
   writeSiteConfig,
 } from '@/lib/site-config-db';
+import { uploadDataUrlIfNeeded } from '@/lib/storage-upload';
 
 function normalizeConfig(input: Partial<SiteConfig>): SiteConfig {
   const defaults = getDefaultSiteConfig();
@@ -27,9 +28,30 @@ export async function getSiteConfig(): Promise<SiteConfig> {
 
 export async function updateSiteConfig(patch: Partial<SiteConfig>): Promise<SiteConfig> {
   const current = await readSiteConfig();
+
+  let brands = patch.brands;
+  if (Array.isArray(brands)) {
+    brands = await Promise.all(
+      brands.map(async (brand, idx) => {
+        if (!brand.logo?.startsWith('data:image/')) return brand;
+        try {
+          const url = await uploadDataUrlIfNeeded(brand.logo, {
+            folder: 'marcas',
+            productName: brand.name,
+            index: idx,
+          });
+          return { ...brand, logo: url };
+        } catch {
+          return brand;
+        }
+      })
+    );
+  }
+
   const next = normalizeConfig({
     ...current,
     ...patch,
+    ...(brands ? { brands } : {}),
   });
   await writeSiteConfig(next);
   return next;

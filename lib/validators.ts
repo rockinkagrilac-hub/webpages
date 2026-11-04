@@ -1,6 +1,20 @@
 import { z } from 'zod'
 
-const imageUrlSchema = z.string().trim().min(1).max(2048)
+/**
+ * Acepta una URL normal (hasta 2048 caracteres) o una imagen subida desde el
+ * panel, que el ImageUploader comprime y envía como data URL base64 (pesa
+ * decenas o cientos de KB). Antes el límite de 2048 rechazaba toda foto subida.
+ */
+const MAX_DATA_URL_LENGTH = 1_500_000
+const imageUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine(
+    (value) =>
+      value.startsWith('data:image/') ? value.length <= MAX_DATA_URL_LENGTH : value.length <= 2048,
+    { message: 'Imagen demasiado grande o URL invalida' }
+  )
 
 export const adminLoginSchema = z.object({
   username: z.string().trim().min(1).max(120),

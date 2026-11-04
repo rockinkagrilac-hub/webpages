@@ -7,13 +7,14 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { FaqAccordion } from '@/components/faq-accordion';
+import { ProductCard } from '@/components/product-card';
 import { SocialIcon, SOCIAL_LINKS } from '@/components/social-icon';
-import { Brand, DEFAULT_BRANDS } from '@/lib/data';
+import { Brand, DEFAULT_BRANDS, Product, ProductsPageResponse } from '@/lib/data';
 import { normalizeBrandName } from '@/lib/product-brand';
-import { CartProvider } from '@/lib/cart-context';
-import { useScrollFx, useRevealOnScroll } from '@/lib/use-scroll-fx';
+import { useScrollFx, useRevealOnScroll, useSpotlight } from '@/lib/use-scroll-fx';
 import {
   IMAGES,
+  GALLERY_META,
   HERO,
   SHOWCASE,
   STATS,
@@ -59,6 +60,26 @@ const ICONS: Record<string, LucideIcon> = {
   LifeBuoy,
 };
 
+const BRAND_SPECIALTIES: Record<string, string> = {
+  lister: 'Esquila y manejo animal',
+  crv: 'Genetica bovina Holanda',
+  melasty: 'Sistemas de ordeno',
+  draminski: 'Ecografia y diagnostico',
+  cito: 'Inseminacion artificial',
+  evial: 'Instrumental veterinario',
+};
+
+function resolveBrandLogo(brand: Brand): string {
+  const key = brand.name.trim().toLowerCase();
+  if (key === 'crv' && (!brand.logo || brand.logo.includes('gstatic.com'))) {
+    return '/brands/crv.svg';
+  }
+  if (key === 'melasty' && (!brand.logo || brand.logo.includes('twimg.com'))) {
+    return '/brands/melasty.svg';
+  }
+  return brand.logo || '/placeholder-logo.svg';
+}
+
 function animateCount(target: number, duration: number, onTick: (value: number) => void) {
   const start = performance.now();
   const step = (now: number) => {
@@ -71,6 +92,10 @@ function animateCount(target: number, duration: number, onTick: (value: number) 
 
 function HomeContent() {
   const [brands, setBrands] = useState<Brand[]>(DEFAULT_BRANDS);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [productCategories, setProductCategories] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [toastProduct, setToastProduct] = useState<string | null>(null);
   const [counters, setCounters] = useState<number[]>(() => STATS.map(() => 0));
   const [statsVisible, setStatsVisible] = useState(false);
   const [headerDark, setHeaderDark] = useState(true);
@@ -80,6 +105,34 @@ function HomeContent() {
 
   useScrollFx();
   useRevealOnScroll();
+  useSpotlight();
+
+  /* ---------- Productos reales desde Supabase para el escaparate ---------- */
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadFeatured = async () => {
+      try {
+        const res = await fetch('/api/products?paginated=1&perPage=24', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (!res.ok) return;
+        const payload = (await res.json()) as ProductsPageResponse;
+        if (Array.isArray(payload.items) && payload.items.length > 0) {
+          setFeaturedProducts(payload.items);
+        }
+        if (Array.isArray(payload.categories) && payload.categories.length > 0) {
+          setProductCategories(payload.categories);
+        }
+      } catch {
+        /* silencioso en caso de abort */
+      }
+    };
+
+    void loadFeatured();
+    return () => controller.abort();
+  }, []);
 
   /* ---------- Marcas reales desde la configuracion del sitio ---------- */
   useEffect(() => {
@@ -91,7 +144,16 @@ function HomeContent() {
         if (!res.ok) return;
         const config = (await res.json()) as { brands?: Brand[] };
         if (Array.isArray(config.brands) && config.brands.length > 0) {
-          setBrands(config.brands);
+          const normalized = config.brands.map((b) => ({
+            ...b,
+            logo: resolveBrandLogo(b),
+          }));
+          const existingNames = new Set(normalized.map((b) => b.name.trim().toLowerCase()));
+          const merged = [
+            ...normalized,
+            ...DEFAULT_BRANDS.filter((d) => !existingNames.has(d.name.trim().toLowerCase())),
+          ];
+          setBrands(merged);
         }
       } catch {
         /* se mantienen las marcas por defecto */
@@ -158,6 +220,18 @@ function HomeContent() {
     const base = names.length > 0 ? names : ['Lister', 'CRV', 'Melasty'];
     return [...base, 'Rockink IMM', ...base, 'Ingenieria Ganadera'];
   }, [brands]);
+
+  const displayedProducts = useMemo(() => {
+    const list = activeCategory
+      ? featuredProducts.filter((item) => item.category === activeCategory)
+      : featuredProducts;
+    return list.slice(0, 6);
+  }, [featuredProducts, activeCategory]);
+
+  const handleProductAdded = (product: Product) => {
+    setToastProduct(product.name);
+    window.setTimeout(() => setToastProduct(null), 2400);
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -242,6 +316,15 @@ function HomeContent() {
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
+
+            <div className="ap-hero-pills ap-rise" style={{ animationDelay: '480ms' }}>
+              {HERO.pills.map((pill) => (
+                <span key={pill} className="ap-hero-pill">
+                  <span className="ap-hero-pill-dot" aria-hidden="true" />
+                  {pill}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -269,11 +352,11 @@ function HomeContent() {
       {/* ══ 3. CIFRAS ══ Cuantifica la escala sin pedir esfuerzo de lectura */}
       <section data-reveal className="reveal-block py-20 sm:py-28">
         <div className="ap-shell">
-          <div ref={statsRef} className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 text-center">
+          <div ref={statsRef} className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 text-center">
             {STATS.map((stat, index) => (
               <div
                 key={stat.label}
-                className="reveal-stagger"
+                className="ap-stat-card ap-spotlight reveal-stagger"
                 style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
               >
                 <p className="ap-stat-value">
@@ -301,18 +384,86 @@ function HomeContent() {
               return (
                 <article
                   key={service.title}
-                  className="ap-service-card reveal-stagger"
+                  className="ap-service-card ap-spotlight reveal-stagger flex flex-col"
                   style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
                 >
+                  <div className="ap-service-media">
+                    <img src={service.image} alt={service.title} loading="lazy" />
+                    <span className="ap-service-num">{`0${index + 1}`}</span>
+                  </div>
                   <span className="ap-service-icon">
                     <Icon className="w-5 h-5" strokeWidth={1.5} />
                   </span>
                   <h3 className="text-lg font-semibold text-foreground mb-2.5">{service.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-grow">{service.description}</p>
+                  <Link href={service.href} className="ap-link mt-5 text-sm">
+                    Explorar linea
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </article>
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ══ 4B. EQUIPOS DESTACADOS ══ Catálogo real conectado en vivo a Supabase */}
+      <section data-reveal className="reveal-block ap-section">
+        <div className="ap-shell">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+            <div className="max-w-2xl">
+              <p className="ap-overline">Catalogo en linea</p>
+              <h2 className="ap-title2 mt-5">Equipos listos para despacho a establo.</h2>
+            </div>
+            <Link href="/store" className="ap-link shrink-0">
+              Explorar todo el catalogo en tienda
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {productCategories.length > 0 && (
+            <div className="mb-10 overflow-x-auto pb-2">
+              <div className="ap-segment ap-featured-tabs">
+                <button
+                  type="button"
+                  data-active={activeCategory === null}
+                  onClick={() => setActiveCategory(null)}
+                >
+                  Todos
+                </button>
+                {productCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    data-active={activeCategory === category}
+                    onClick={() => setActiveCategory(category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {displayedProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {displayedProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="reveal-stagger"
+                  style={{ '--stagger': `${index * 75}ms` } as CSSProperties}
+                >
+                  <ProductCard product={product} onAddedToCart={handleProductAdded} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[0, 1, 2].map((skeleton) => (
+                <div key={skeleton} className="ap-card h-80 animate-pulse bg-muted" />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -362,12 +513,12 @@ function HomeContent() {
             <h2 className="ap-title2 mt-5">Cuatro pasos, sin sorpresas.</h2>
           </div>
 
-          <div className="ap-timeline">
+          <div data-scrollfx className="ap-timeline">
             {PROCESS.map((item, index) => (
               <div
                 key={item.step}
                 className="ap-timeline-item reveal-stagger"
-                style={{ '--stagger': `${index * 110}ms` } as CSSProperties}
+                style={{ '--stagger': `${index * 110}ms`, '--i': index } as CSSProperties}
               >
                 <p className="ap-timeline-step">{`0${index + 1} — ${item.step}`}</p>
                 <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
@@ -433,46 +584,80 @@ function HomeContent() {
           </div>
 
           <div className={`ap-gallery ${IMAGES.gallery.length >= 6 ? 'ap-gallery--mosaic' : ''}`}>
-            {IMAGES.gallery.map((src, index) => (
-              <div
-                key={`${src}-${index}`}
-                className="ap-gallery-tile reveal-stagger"
-                style={{ '--stagger': `${index * 60}ms` } as CSSProperties}
-              >
-                <img src={src} alt="" loading="lazy" className="ap-parallax" />
-              </div>
-            ))}
+            {IMAGES.gallery.map((src, index) => {
+              const meta = GALLERY_META[index];
+              return (
+                <div
+                  key={`${src}-${index}`}
+                  className="ap-gallery-tile reveal-stagger"
+                  style={{ '--stagger': `${index * 60}ms` } as CSSProperties}
+                >
+                  <img
+                    src={src}
+                    alt={meta ? `${meta.tag} — ${meta.caption}` : `Operacion ganadera ${index + 1}`}
+                    loading="lazy"
+                    className="ap-parallax"
+                  />
+                  {meta && (
+                    <div className="ap-gallery-overlay">
+                      <span className="ap-gallery-tag">{meta.tag}</span>
+                      <p className="ap-gallery-caption">{meta.caption}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ══ 9. ALIANZAS ══ Validación externa que cierra el ciclo de confianza */}
       <section data-reveal className="reveal-block ap-section bg-muted">
-        <div className="ap-shell grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 lg:gap-20 items-center">
+        <div className="ap-shell grid grid-cols-1 lg:grid-cols-[0.82fr_1.18fr] gap-12 lg:gap-16 items-center">
           <div>
             <p className="ap-overline">{PARTNERSHIP_NOTE.overline}</p>
             <h2 className="ap-title2 mt-5">{PARTNERSHIP_NOTE.title}</h2>
             <p className="ap-sub mt-5 text-base sm:text-lg">{PARTNERSHIP_NOTE.description}</p>
+            <Link href="/store" className="ap-link mt-7 text-sm">
+              Filtrar equipos por marca en la tienda
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {brands.map((brand, index) => (
-              <div
-                key={brand.id}
-                className="ap-card reveal-stagger flex items-center justify-center p-6 min-h-[7rem]"
-                style={{ '--stagger': `${index * 90}ms` } as CSSProperties}
-              >
-                <img
-                  src={brand.logo || '/placeholder-logo.svg'}
-                  alt={brand.name}
-                  loading="lazy"
-                  onError={(event) => {
-                    event.currentTarget.src = '/placeholder-logo.svg';
-                  }}
-                  className="max-h-14 w-full object-contain"
-                />
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+            {brands.map((brand, index) => {
+              const key = brand.name.trim().toLowerCase();
+              const specialty = BRAND_SPECIALTIES[key] || 'Linea internacional';
+              return (
+                <Link
+                  key={brand.id}
+                  href={`/store?brand=${encodeURIComponent(brand.name)}`}
+                  className="ap-card ap-spotlight group reveal-stagger flex flex-col justify-between p-7 sm:p-8 min-h-[11.5rem] sm:min-h-[13rem]"
+                  style={{ '--stagger': `${index * 80}ms` } as CSSProperties}
+                >
+                  <div className="flex items-center justify-center h-20 sm:h-24 w-full">
+                    <img
+                      src={resolveBrandLogo(brand)}
+                      alt={brand.name}
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.src = '/placeholder-logo.svg';
+                      }}
+                      className="max-h-16 sm:max-h-20 w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="pt-4 mt-4 border-t border-border flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {brand.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{specialty}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -656,6 +841,20 @@ function HomeContent() {
         </span>
       </a>
 
+      {toastProduct && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-foreground text-background px-5 py-3 rounded-full shadow-lg text-sm font-medium flex items-center gap-3"
+        >
+          <span className="w-2 h-2 rounded-full bg-primary" />
+          <span className="truncate max-w-[60vw]">Anadido: {toastProduct}</span>
+          <Link href="/cart" className="text-primary font-semibold hover:underline shrink-0">
+            Ver carrito
+          </Link>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
@@ -663,8 +862,6 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <CartProvider>
       <HomeContent />
-    </CartProvider>
   );
 }

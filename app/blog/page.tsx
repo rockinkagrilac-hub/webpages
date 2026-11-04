@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
-import { CartProvider } from '@/lib/cart-context';
 import { POSTS } from '@/lib/home-content';
 import { ChevronRight } from 'lucide-react';
 
@@ -63,8 +62,6 @@ function BlogContent() {
 
 export default function BlogPage() {
   return (
-    <CartProvider>
       <BlogContent />
-    </CartProvider>
   );
 }

@@ -1,18 +1,39 @@
-﻿'use client';
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PRODUCTS, Product, Brand, DEFAULT_BRANDS } from '@/lib/data';
-import { Edit2, Trash2, Plus, Check, Award } from 'lucide-react';
+import { Edit2, Trash2, Plus, Check, Award, Search } from 'lucide-react';
 import Image from 'next/image';
 import { ImageUploader } from '@/components/image-uploader';
 
 const MAX_PRODUCT_IMAGES = 10;
 const LOW_STOCK_THRESHOLD = 5;
+
+function extractYoutubeId(raw?: string): string {
+  const value = (raw || '').trim();
+  if (!value) return '';
+  try {
+    if (value.includes('youtube.com') || value.includes('youtu.be')) {
+      const url = new URL(value);
+      if (url.hostname.includes('youtu.be')) {
+        return url.pathname.replace(/^\/+/, '').split('/')[0] || '';
+      }
+      const vParam = url.searchParams.get('v');
+      if (vParam) return vParam;
+      const parts = url.pathname.split('/').filter(Boolean);
+      const embedIdx = parts.findIndex((p) => p === 'embed' || p === 'shorts');
+      if (embedIdx >= 0 && parts[embedIdx + 1]) return parts[embedIdx + 1];
+    }
+  } catch {
+    /* si no es URL completa, se devuelve el ID tal cual */
+  }
+  return value;
+}
 
 function AdminDashboardContent() {
   const { isLoggedIn, isMounted } = useAuth();
@@ -29,6 +50,8 @@ function AdminDashboardContent() {
   const [newBrandLogo, setNewBrandLogo] = useState('');
   const [newBrandUrl, setNewBrandUrl] = useState('');
   const [productImages, setProductImages] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const getApiErrorMessage = async (response: Response, fallback: string) => {
     try {
@@ -103,104 +126,124 @@ function AdminDashboardContent() {
     void loadSiteConfigFromApi();
   }, [isMounted, isLoggedIn]);
 
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => {
+      const text = `${p.name} ${p.category} ${p.brand || ''} ${p.description}`.toLowerCase();
+      return text.includes(q);
+    });
+  }, [products, searchQuery]);
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    if (!formData.name || isSaving) return;
 
-    const fallbackImage =
-      formData.image ||
-      'https://images.unsplash.com/photo-1574895617837-7e16022e5ecb?w=500&h=500&fit=crop';
-    const selectedImages =
-      productImages.length > 0 ? productImages.slice(0, MAX_PRODUCT_IMAGES) : [fallbackImage];
-    const mainImage = selectedImages[0];
+    setIsSaving(true);
+    try {
+      const fallbackImage = formData.image || '/placeholder.svg';
+      const selectedImages =
+        productImages.length > 0 ? productImages.slice(0, MAX_PRODUCT_IMAGES) : [fallbackImage];
+      const mainImage = selectedImages[0];
 
-    const stockQuantity =
-      typeof formData.stockQuantity === 'number'
-        ? Math.max(0, Math.floor(formData.stockQuantity))
-        : Number(formData.stockQuantity ?? 0) > 0
-        ? Math.max(0, Math.floor(Number(formData.stockQuantity)))
-        : 0;
+      const stockQuantity =
+        typeof formData.stockQuantity === 'number'
+          ? Math.max(0, Math.floor(formData.stockQuantity))
+          : Number(formData.stockQuantity ?? 0) > 0
+          ? Math.max(0, Math.floor(Number(formData.stockQuantity)))
+          : 0;
 
-    const newProduct: Product = {
-      id: Date.now().toString(),
-      name: formData.name || '',
-      description: formData.description || '',
-      category: formData.category || 'Otros',
-      brand: (formData as Product & { brand?: string }).brand || '',
-      image: mainImage,
-      model3dEmbedUrl: formData.model3dEmbedUrl || undefined,
-      images: selectedImages,
-      specifications: formData.specifications || [],
-      youtubeId: formData.youtubeId || 'dQw4w9WgXcQ',
-      stockQuantity,
-      inStock: stockQuantity > 0,
-      inOffer: formData.inOffer || false,
-    };
+      const cleanName = formData.name.trim();
+      const newProduct: Product = {
+        id: Date.now().toString(),
+        name: cleanName,
+        description: formData.description?.trim() || cleanName,
+        category: formData.category?.trim() || 'Otros',
+        brand: (formData as Product & { brand?: string }).brand?.trim() || '',
+        image: mainImage,
+        model3dEmbedUrl: formData.model3dEmbedUrl?.trim() || undefined,
+        images: selectedImages,
+        specifications: formData.specifications || [],
+        youtubeId: extractYoutubeId(formData.youtubeId),
+        stockQuantity,
+        inStock: stockQuantity > 0,
+        inOffer: formData.inOffer || false,
+      };
 
-    const response = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newProduct),
-    });
-    if (!response.ok) {
-      alert(await getApiErrorMessage(response, 'No se pudo crear el producto'));
-      return;
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProduct),
+      });
+      if (!response.ok) {
+        alert(await getApiErrorMessage(response, 'No se pudo crear el producto'));
+        return;
+      }
+      await loadProductsFromApi();
+      setFormData({});
+      setProductImages([]);
+      setShowAddForm(false);
+      alert('Producto añadido exitosamente');
+    } finally {
+      setIsSaving(false);
     }
-    await loadProductsFromApi();
-    setFormData({});
-    setProductImages([]);
-    setShowAddForm(false);
-    alert('Producto añadido exitosamente');
   };
 
   const handleUpdateProduct = async (id: string, e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     const current = products.find((p) => p.id === id);
     if (!current) return;
-    const existingImages =
-      current.images && current.images.length > 0
-        ? current.images.slice(0, MAX_PRODUCT_IMAGES)
-        : [current.image];
-    const selectedImages =
-      productImages.length > 0
-        ? productImages.slice(0, MAX_PRODUCT_IMAGES)
-        : formData.image
-        ? [formData.image]
-        : existingImages;
-    const mainImage = selectedImages[0] || current.image;
-    const nextStockQuantity =
-      typeof formData.stockQuantity === 'number'
-        ? Math.max(0, Math.floor(formData.stockQuantity))
-        : formData.stockQuantity !== undefined
-        ? Math.max(0, Math.floor(Number(formData.stockQuantity) || 0))
-        : typeof current.stockQuantity === 'number'
-        ? current.stockQuantity
-        : current.inStock
-        ? 1
-        : 0;
 
-    const payload: Product = {
-      ...current,
-      ...formData,
-      image: mainImage,
-      images: selectedImages,
-      stockQuantity: nextStockQuantity,
-      inStock: nextStockQuantity > 0,
-    };
-    const response = await fetch(`/api/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      alert(await getApiErrorMessage(response, 'No se pudo actualizar el producto'));
-      return;
+    setIsSaving(true);
+    try {
+      const selectedImages =
+        productImages.length > 0
+          ? productImages.slice(0, MAX_PRODUCT_IMAGES)
+          : ['/placeholder.svg'];
+      const mainImage = selectedImages[0] || '/placeholder.svg';
+
+      const nextStockQuantity =
+        typeof formData.stockQuantity === 'number'
+          ? Math.max(0, Math.floor(formData.stockQuantity))
+          : formData.stockQuantity !== undefined
+          ? Math.max(0, Math.floor(Number(formData.stockQuantity) || 0))
+          : typeof current.stockQuantity === 'number'
+          ? current.stockQuantity
+          : current.inStock
+          ? 1
+          : 0;
+
+      const cleanName = formData.name?.trim() || current.name;
+      const payload: Product = {
+        ...current,
+        ...formData,
+        name: cleanName,
+        description: formData.description?.trim() || cleanName,
+        category: formData.category?.trim() || current.category || 'Otros',
+        youtubeId: extractYoutubeId(formData.youtubeId),
+        image: mainImage,
+        images: selectedImages,
+        stockQuantity: nextStockQuantity,
+        inStock: nextStockQuantity > 0,
+      };
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        alert(await getApiErrorMessage(response, 'No se pudo actualizar el producto'));
+        return;
+      }
+      await loadProductsFromApi();
+      setEditingId(null);
+      setFormData({});
+      setProductImages([]);
+      alert('Producto actualizado exitosamente');
+    } finally {
+      setIsSaving(false);
     }
-    await loadProductsFromApi();
-    setEditingId(null);
-    setFormData({});
-    setProductImages([]);
-    alert('Producto actualizado exitosamente');
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -232,8 +275,8 @@ function AdminDashboardContent() {
 
     const newBrand: Brand = {
       id: Date.now().toString(),
-      name: newBrandName,
-      logo: newBrandLogo,
+      name: newBrandName.trim(),
+      logo: newBrandLogo.trim(),
       url: newBrandUrl.trim() ? newBrandUrl.trim() : undefined,
     };
 
@@ -259,15 +302,15 @@ function AdminDashboardContent() {
     <div className="min-h-screen bg-background">
       <Header isAdmin={true} />
 
-      <section className="max-w-7xl mx-auto px-4 py-8">
+      <section className="max-w-7xl mx-auto px-4 pt-24 sm:pt-28 pb-12">
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-border">
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-border">
           <Button
             variant={activeTab === 'productos' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('productos')}
             className="rounded-b-none"
           >
-            Productos
+            Productos ({products.length})
           </Button>
           <Button
             variant={activeTab === 'ofertas' ? 'default' : 'ghost'}
@@ -275,7 +318,7 @@ function AdminDashboardContent() {
             className="rounded-b-none"
           >
             <Check className="w-4 h-4 mr-2" />
-            Gestionar Ofertas
+            Gestionar Ofertas ({selectedOffersProducts.length})
           </Button>
           <Button
             variant={activeTab === 'marcas' ? 'default' : 'ghost'}
@@ -283,13 +326,13 @@ function AdminDashboardContent() {
             className="rounded-b-none"
           >
             <Award className="w-4 h-4 mr-2" />
-            Marcas
+            Marcas ({brands.length})
           </Button>
         </div>
 
         {/* Tab: Productos */}
         {activeTab === 'productos' && (
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h1 className="text-3xl font-bold text-primary">Gestión de Productos</h1>
             <Button
               onClick={() => {
@@ -298,7 +341,7 @@ function AdminDashboardContent() {
                 setFormData({});
                 setProductImages([]);
               }}
-              className="bg-secondary hover:bg-secondary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="w-4 h-4 mr-2" />
               {showAddForm ? 'Cancelar' : 'Nuevo Producto'}
@@ -308,7 +351,7 @@ function AdminDashboardContent() {
 
         {/* Add/Edit Form */}
         {activeTab === 'productos' && (showAddForm || editingId) && (
-          <Card className="mb-8 border-2 border-accent">
+          <Card className="mb-8 border-2 border-primary">
             <CardContent className="pt-6">
               <form
                 onSubmit={(e) =>
@@ -336,7 +379,7 @@ function AdminDashboardContent() {
                       value={formData.category || ''}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-3 py-2 border border-input rounded"
-                      placeholder="Escribe la categoría"
+                      placeholder="Ej: ORDEÑO, INSTRUMENTAL, SEGURIDAD"
                     />
                   </div>
 
@@ -369,6 +412,8 @@ function AdminDashboardContent() {
                       images={productImages}
                       onImagesChange={setProductImages}
                       maxImages={MAX_PRODUCT_IMAGES}
+                      folder="productos"
+                      productName={formData.name}
                     />
                   </div>
 
@@ -379,7 +424,10 @@ function AdminDashboardContent() {
                       min={0}
                       value={formData.stockQuantity ?? 0}
                       onChange={(e) =>
-                        setFormData({ ...formData, stockQuantity: Math.max(0, Number(e.target.value) || 0) })
+                        setFormData({
+                          ...formData,
+                          stockQuantity: Math.max(0, Number(e.target.value) || 0),
+                        })
                       }
                       className="w-full px-3 py-2 border border-input rounded"
                       placeholder="0"
@@ -387,22 +435,28 @@ function AdminDashboardContent() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">ID de Video YouTube</label>
+                    <label className="block text-sm font-semibold mb-2">
+                      Video de YouTube (ID o enlace completo)
+                    </label>
                     <input
                       type="text"
                       value={formData.youtubeId || ''}
                       onChange={(e) => setFormData({ ...formData, youtubeId: e.target.value })}
                       className="w-full px-3 py-2 border border-input rounded"
-                      placeholder="dQw4w9WgXcQ"
+                      placeholder="Ej: aqz-KE-bpKQ o https://youtu.be/..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">URL embebible 3D (opcional)</label>
+                    <label className="block text-sm font-semibold mb-2">
+                      URL embebible 3D (opcional)
+                    </label>
                     <input
                       type="text"
                       value={formData.model3dEmbedUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, model3dEmbedUrl: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, model3dEmbedUrl: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-input rounded"
                       placeholder="https://sketchfab.com/models/.../embed"
                     />
@@ -412,7 +466,9 @@ function AdminDashboardContent() {
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={(formData.stockQuantity ?? (formData.inStock !== false ? 1 : 0)) > 0}
+                        checked={
+                          (formData.stockQuantity ?? (formData.inStock !== false ? 1 : 0)) > 0
+                        }
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -442,8 +498,16 @@ function AdminDashboardContent() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit" className="bg-primary hover:bg-primary/90">
-                    {editingId ? 'Actualizar Producto' : 'Crear Producto'}
+                  <Button
+                    type="submit"
+                    disabled={isSaving}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {isSaving
+                      ? 'Guardando...'
+                      : editingId
+                      ? 'Actualizar Producto'
+                      : 'Crear Producto'}
                   </Button>
                   <Button
                     type="button"
@@ -463,47 +527,68 @@ function AdminDashboardContent() {
           </Card>
         )}
 
+        {/* Buscador rápido para Productos y Ofertas */}
+        {(activeTab === 'productos' || activeTab === 'ofertas') && (
+          <div className="relative mb-6">
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar producto por nombre, marca o categoría..."
+              className="w-full pl-10 pr-4 py-2.5 border border-input rounded-xl bg-card text-sm"
+            />
+          </div>
+        )}
+
         {/* Products Table */}
         {activeTab === 'productos' && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-primary">
-              Total de productos: {products.length}
+            <h2 className="text-lg font-semibold text-foreground">
+              Mostrando {filteredProducts.length} de {products.length} productos
             </h2>
 
             <div className="grid gap-4">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden">
                   <CardContent className="p-4">
                     <div className="flex gap-4 items-start">
                       <div className="relative w-24 h-24 bg-muted rounded flex-shrink-0">
                         <Image
-                          src={product.image || "/placeholder.svg"}
+                          src={product.image || '/placeholder.svg'}
                           alt={product.name}
                           fill
+                          unoptimized={product.image?.startsWith('data:')}
                           className="object-cover rounded"
                         />
                       </div>
 
                       <div className="flex-grow">
                         <h3 className="text-lg font-bold text-primary">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{product.category}</p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {product.category}
+                          {product.brand ? ` · ${product.brand}` : ''}
+                        </p>
                         <p className="text-sm text-foreground line-clamp-2 mb-2">
                           {product.description}
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
                             Stock: {product.stockQuantity ?? (product.inStock ? 1 : 0)}
                           </span>
-                          {(product.stockQuantity ?? (product.inStock ? 1 : 0)) <= LOW_STOCK_THRESHOLD && (
+                          {(product.stockQuantity ?? (product.inStock ? 1 : 0)) <=
+                            LOW_STOCK_THRESHOLD && (
                             <span className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-700">
                               Stock bajo
                             </span>
                           )}
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            product.inStock
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              product.inStock
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             {product.inStock ? 'En Stock' : 'Agotado'}
                           </span>
                         </div>
@@ -522,6 +607,7 @@ function AdminDashboardContent() {
                                 : [product.image]
                             );
                             setShowAddForm(false);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                         >
                           <Edit2 className="w-4 h-4" />
@@ -542,22 +628,21 @@ function AdminDashboardContent() {
           </div>
         )}
 
-
         {/* Tab: Gestionar Ofertas */}
         {activeTab === 'ofertas' && (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-primary">Gestión de Productos en Oferta</h1>
             <p className="text-muted-foreground">
-              Selecciona los productos que deseas mostrar en la sección de ofertas. Estos aparecerán en el carrusel principal.
+              Selecciona los productos que deseas mostrar con la etiqueta de oferta en la tienda.
             </p>
 
             <div className="grid gap-3">
-              {products.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">No hay productos disponibles</p>
+                  <p className="text-muted-foreground">No se encontraron productos</p>
                 </div>
               ) : (
-                products.map((product) => (
+                filteredProducts.map((product) => (
                   <Card
                     key={product.id}
                     className={`cursor-pointer transition-all ${
@@ -570,9 +655,10 @@ function AdminDashboardContent() {
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className="relative w-20 h-20 bg-muted rounded flex-shrink-0">
                         <Image
-                          src={product.image}
+                          src={product.image || '/placeholder.svg'}
                           alt={product.name}
                           fill
+                          unoptimized={product.image?.startsWith('data:')}
                           className="object-cover rounded"
                         />
                       </div>
@@ -581,7 +667,7 @@ function AdminDashboardContent() {
                         <h3 className="font-bold text-foreground">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">{product.category}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {product.inStock ? 'âœ“ En Stock' : 'âœ— Agotado'}
+                          {product.inStock ? '✓ En Stock' : '✗ Agotado'}
                         </p>
                       </div>
 
@@ -589,7 +675,7 @@ function AdminDashboardContent() {
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
                           selectedOffersProducts.includes(product.id)
                             ? 'bg-primary border-primary'
-                            : 'border-gray-300'
+                            : 'border-border'
                         }`}
                       >
                         {selectedOffersProducts.includes(product.id) && (
@@ -630,17 +716,18 @@ function AdminDashboardContent() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-2">URL del Logo</label>
-                    <input
-                      type="text"
-                      value={newBrandLogo}
-                      onChange={(e) => setNewBrandLogo(e.target.value)}
-                      className="w-full px-3 py-2 border border-input rounded"
-                      placeholder="https://example.com/logo.png"
+                    <ImageUploader
+                      images={newBrandLogo ? [newBrandLogo] : []}
+                      onImagesChange={(imgs) => setNewBrandLogo(imgs[0] || '')}
+                      maxImages={1}
+                      folder="marcas"
+                      productName={newBrandName}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Link de la Marca (opcional)</label>
+                    <label className="block text-sm font-semibold mb-2">
+                      Link de la Marca (opcional)
+                    </label>
                     <input
                       type="text"
                       value={newBrandUrl}
@@ -649,7 +736,11 @@ function AdminDashboardContent() {
                       placeholder="https://www.marca.com"
                     />
                   </div>
-                  <Button onClick={handleAddBrand} className="w-full bg-primary hover:bg-primary/90">
+                  <Button
+                    type="button"
+                    onClick={handleAddBrand}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Agregar Marca
                   </Button>
@@ -688,7 +779,6 @@ function AdminDashboardContent() {
             </div>
           </div>
         )}
-
       </section>
     </div>
   );
@@ -697,10 +787,3 @@ function AdminDashboardContent() {
 export default function AdminPage() {
   return <AdminDashboardContent />;
 }
-
-
-
-
-
-
-

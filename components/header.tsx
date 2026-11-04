@@ -58,7 +58,7 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
               className={`hidden sm:inline bg-clip-text text-transparent font-bold ${
                 isDark
                   ? 'bg-gradient-to-r from-emerald-300 to-lime-200'
-                  : 'bg-gradient-to-r from-primary to-secondary'
+                  : 'bg-gradient-to-r from-primary to-emerald-800'
               }`}
             >
               Rockink IMM
@@ -82,7 +82,7 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
                   Panel
                 </Link>
                 <Link href="/admin" className="nav-link">
-                  Gestionar
+                  Ver Tienda
                 </Link>
               </>
             )}
@@ -179,7 +179,7 @@ export function Header({ isAdmin = false, variant = 'light' }: HeaderProps) {
                   Panel
                 </Link>
                 <Link href="/admin" onClick={closeMobileMenu} className="py-2.5 px-3 hover:bg-muted rounded-lg transition-colors duration-200 text-sm font-medium">
-                  Gestionar
+                  Ver Tienda
                 </Link>
               </>
             )}

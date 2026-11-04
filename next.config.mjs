@@ -10,8 +10,22 @@ const nextConfig = {
         hostname: 'pub-c673dc170a9a4dcda52c514785042c8b.r2.dev',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
+    localPatterns: [
+      {
+        pathname: '/**',
+      },
+    ],
   },
 }
 

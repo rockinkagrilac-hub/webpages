@@ -19,11 +19,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // Hidratar desde localStorage
+  // Hidratar desde localStorage. Un valor corrupto no debe tumbar la app entera.
   useEffect(() => {
-    const saved = localStorage.getItem('cart');
-    if (saved) {
-      setItems(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('cart');
+      const parsed = saved ? (JSON.parse(saved) as unknown) : [];
+      if (Array.isArray(parsed)) {
+        setItems(
+          parsed.filter(
+            (item): item is CartItem =>
+              !!item &&
+              typeof item.productId === 'string' &&
+              typeof item.quantity === 'number' &&
+              item.quantity > 0
+          )
+        );
+      }
+    } catch {
+      localStorage.removeItem('cart');
     }
     setMounted(true);
   }, []);

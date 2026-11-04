@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { PRODUCTS, Product, ProductsPageResponse } from '@/lib/data';
 import { normalizeBrandName } from '@/lib/product-brand';
-import { CartProvider, useCart } from '@/lib/cart-context';
+import { useCart } from '@/lib/cart-context';
 import { ArrowLeft, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 
 /** A partir de este numero de marcas, el panel muestra un buscador. */
@@ -768,8 +768,6 @@ function StoreContent() {
 
 export default function Store() {
   return (
-    <CartProvider>
       <StoreContent />
-    </CartProvider>
   );
 }

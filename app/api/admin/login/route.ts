@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { supabase } from '@/lib/supabase'
 import { adminLoginSchema } from '@/lib/validators'
-import { setAdminCookie } from '@/lib/admin-auth'
+import { getAdminUser, setAdminCookie } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,13 +30,13 @@ function jsonNoStore(data: unknown, init?: ResponseInit) {
 }
 
 /**
- * El control de intentos vive en Supabase, no en memoria: en serverless cada
- * instancia tenía su propio Map, así que el límite se evadía solo cambiando de
- * instancia.
- *
- * Si la tabla todavía no existe (migración sin aplicar) se deja pasar en vez de
- * bloquear: quedarse fuera del panel es peor que perder temporalmente el límite.
+ * El control de intentos intenta guardarse en Supabase para persistir entre
+ * instancias serverless. Si la tabla `login_attempts` aún no está creada,
+ * conmuta automáticamente a un Map en memoria como salvaguarda para garantizar
+ * que los ataques de fuerza bruta se sigan bloqueando en cualquier entorno.
  */
+const memoryRateLimit = new Map<string, { intentos: number; resetAt: number }>()
+
 async function isRateLimited(ip: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
@@ -45,46 +45,79 @@ async function isRateLimited(ip: string): Promise<boolean> {
       .eq('ip', ip)
       .maybeSingle()
 
-    if (error || !data) return false
-    return data.intentos >= MAX_ATTEMPTS && new Date(data.reset_at).getTime() > Date.now()
+    if (!error && data) {
+      return data.intentos >= MAX_ATTEMPTS && new Date(data.reset_at).getTime() > Date.now()
+    }
   } catch {
-    return false
+    // Fallback a memoria si la base de datos no responde
   }
+
+  const entry = memoryRateLimit.get(ip)
+  if (entry) {
+    if (Date.now() > entry.resetAt) {
+      memoryRateLimit.delete(ip)
+      return false
+    }
+    return entry.intentos >= MAX_ATTEMPTS
+  }
+  return false
 }
 
 async function registerFailedAttempt(ip: string) {
+  const now = Date.now()
+  let recordedInDb = false
+
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('login_attempts')
       .select('intentos, reset_at')
       .eq('ip', ip)
       .maybeSingle()
 
-    const now = Date.now()
-    const windowActive = data && new Date(data.reset_at).getTime() > now
-
-    await supabase.from('login_attempts').upsert(
-      {
-        ip,
-        intentos: windowActive ? (data?.intentos ?? 0) + 1 : 1,
-        reset_at: windowActive
-          ? new Date(data!.reset_at).toISOString()
-          : new Date(now + WINDOW_MS).toISOString(),
-        updated_at: new Date(now).toISOString(),
-      },
-      { onConflict: 'ip' }
-    )
+    if (!error) {
+      const windowActive = data && new Date(data.reset_at).getTime() > now
+      const { error: upsertErr } = await supabase.from('login_attempts').upsert(
+        {
+          ip,
+          intentos: windowActive ? (data?.intentos ?? 0) + 1 : 1,
+          reset_at: windowActive
+            ? new Date(data!.reset_at).toISOString()
+            : new Date(now + WINDOW_MS).toISOString(),
+          updated_at: new Date(now).toISOString(),
+        },
+        { onConflict: 'ip' }
+      )
+      if (!upsertErr) recordedInDb = true
+    }
   } catch {
-    // Que no se pueda registrar el intento no debe tumbar el login.
+    // Fallback a memoria
+  }
+
+  if (!recordedInDb) {
+    const entry = memoryRateLimit.get(ip)
+    if (entry && now < entry.resetAt) {
+      entry.intentos += 1
+    } else {
+      memoryRateLimit.set(ip, { intentos: 1, resetAt: now + WINDOW_MS })
+    }
   }
 }
 
 async function clearAttempts(ip: string) {
+  memoryRateLimit.delete(ip)
   try {
     await supabase.from('login_attempts').delete().eq('ip', ip)
   } catch {
     // sin consecuencias
   }
+}
+
+export async function GET(request: Request) {
+  const username = await getAdminUser(request)
+  if (!username) {
+    return jsonNoStore({ authenticated: false }, { status: 401 })
+  }
+  return jsonNoStore({ authenticated: true, username })
 }
 
 export async function POST(request: Request) {

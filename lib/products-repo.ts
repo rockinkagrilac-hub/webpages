@@ -1,5 +1,6 @@
 import { Product } from '@/lib/data'
 import { supabase } from '@/lib/supabase'
+import { uploadDataUrlIfNeeded } from '@/lib/storage-upload'
 
 type ProductRow = {
   id: string
@@ -22,7 +23,8 @@ type ProductImageRow = {
   created_at: string
 }
 
-const DEFAULT_YOUTUBE = 'dQw4w9WgXcQ'
+/** Sin video real se deja vacío y la ficha oculta la pestaña "Video". */
+const DEFAULT_YOUTUBE = ''
 const PLACEHOLDER_IMAGE = '/placeholder.svg'
 
 function normalizeImages(rows: ProductImageRow[]) {
@@ -129,9 +131,24 @@ async function replaceProductImages(productId: string, input: Product | Partial<
   const images = buildProductImages(input)
   if (images.length === 0) return
 
-  const payload = images.map((image) => ({
+  const productName = input.name?.trim() || input.description?.trim() || productId
+  const resolvedUrls = await Promise.all(
+    images.map(async (image, idx) => {
+      try {
+        return await uploadDataUrlIfNeeded(image.image_url, {
+          folder: 'productos',
+          productName,
+          index: idx,
+        })
+      } catch {
+        return image.image_url
+      }
+    })
+  )
+
+  const payload = images.map((image, idx) => ({
     product_id: productId,
-    image_url: image.image_url,
+    image_url: resolvedUrls[idx],
     sort_order: image.sort_order,
   }))
 

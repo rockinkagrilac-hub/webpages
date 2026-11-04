@@ -3,12 +3,23 @@
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { PRODUCTS, PHONE_NUMBERS, Product } from '@/lib/data';
+import { ProductCard } from '@/components/product-card';
+import { PRODUCTS, PHONE_NUMBERS, Product, ProductsPageResponse } from '@/lib/data';
 import { useCart } from '@/lib/cart-context';
-import { CartProvider } from '@/lib/cart-context';
-import { ArrowLeft, ShoppingCart, Check, Download, MessageCircle } from 'lucide-react';
+import { useSpotlight } from '@/lib/use-scroll-fx';
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Check,
+  Download,
+  MessageCircle,
+  ZoomIn,
+  ShieldCheck,
+  Truck,
+  Wrench,
+  ChevronRight,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -27,10 +38,13 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const [activeTab, setActiveTab] = useState<DetailTab>('description');
   const { addItem } = useCart();
 
+  useSpotlight();
+
   useEffect(() => {
     const controller = new AbortController();
 
     const loadProducts = async () => {
+      setIsLoadingProducts(true);
       try {
         const productResponse = await fetch(`/api/products/${productId}`, {
           signal: controller.signal,
@@ -39,22 +53,23 @@ function ProductDetailContent({ productId }: { productId: string }) {
         const productData = (await productResponse.json()) as Product;
         setProduct(productData);
 
-        const productsResponse = await fetch('/api/products', {
-          signal: controller.signal,
-        });
-        if (!productsResponse.ok) throw new Error('Error API');
-        const allProducts = (await productsResponse.json()) as Product[];
-        setRelatedProducts(
-          allProducts
-            .filter((item) => item.id !== productData.id && item.category === productData.category)
-            .slice(0, 4)
+        const relatedResponse = await fetch(
+          `/api/products?paginated=1&category=${encodeURIComponent(productData.category)}&perPage=5`,
+          { signal: controller.signal }
         );
+        if (relatedResponse.ok) {
+          const relatedPayload = (await relatedResponse.json()) as ProductsPageResponse;
+          const items = Array.isArray(relatedPayload.items) ? relatedPayload.items : [];
+          setRelatedProducts(items.filter((item) => item.id !== productData.id).slice(0, 4));
+        }
       } catch {
         const fallbackProduct = PRODUCTS.find((item) => item.id === productId) || null;
         setProduct(fallbackProduct);
         setRelatedProducts(
           fallbackProduct
-            ? PRODUCTS.filter((item) => item.id !== fallbackProduct.id && item.category === fallbackProduct.category).slice(0, 4)
+            ? PRODUCTS.filter(
+                (item) => item.id !== fallbackProduct.id && item.category === fallbackProduct.category
+              ).slice(0, 4)
             : []
         );
       } finally {
@@ -70,7 +85,8 @@ function ProductDetailContent({ productId }: { productId: string }) {
 
   const images = useMemo(() => {
     if (!product) return [] as string[];
-    return product.images && product.images.length > 0 ? product.images : [product.image];
+    const list = product.images && product.images.length > 0 ? product.images : [product.image];
+    return list.filter(Boolean);
   }, [product]);
 
   useEffect(() => {
@@ -81,19 +97,27 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const handleAddCart = () => {
     addItem(productId);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1800);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   const handleDownloadFicha = () => {
     if (!product) return;
     const text = [
+      `ROCKINK IMM — FICHA TECNICA`,
+      `====================================`,
       `Producto: ${product.name}`,
       `Categoria: ${product.category}`,
-      `Descripcion: ${product.description}`,
+      product.brand ? `Marca: ${product.brand}` : '',
+      `Disponibilidad: ${product.inStock !== false ? 'En stock' : 'Consultar disponibilidad'}`,
       '',
-      'Especificaciones:',
+      `Descripcion:`,
+      product.description,
+      '',
+      'Especificaciones tecnicas:',
       ...product.specifications.map((s, i) => `${i + 1}. ${s}`),
-    ].join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -104,23 +128,37 @@ function ProductDetailContent({ productId }: { productId: string }) {
     URL.revokeObjectURL(url);
   };
 
+  const youtubeId = product?.youtubeId?.trim() || '';
+  const hasValidVideo = Boolean(youtubeId && youtubeId !== 'dQw4w9WgXcQ');
   const model3dUrl = product?.model3dEmbedUrl?.trim() || '';
   const has3dModel = /^https?:\/\/.+/i.test(model3dUrl);
   const isGlbModel = /\.glb(\?|$)/i.test(model3dUrl);
 
   useEffect(() => {
     if (activeTab === 'model3d' && !has3dModel) {
-      setActiveTab('video');
+      setActiveTab('description');
     }
-  }, [activeTab, has3dModel]);
+    if (activeTab === 'video' && !hasValidVideo) {
+      setActiveTab('description');
+    }
+  }, [activeTab, has3dModel, hasValidVideo]);
 
   if (isLoadingProducts) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Cargando producto...</p>
-        </div>
+        <main className="ap-shell pt-32 pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="h-[420px] rounded-2xl bg-muted animate-pulse" />
+            <div className="space-y-4 py-4">
+              <div className="h-6 w-32 rounded-full bg-muted animate-pulse" />
+              <div className="h-10 w-3/4 rounded-xl bg-muted animate-pulse" />
+              <div className="h-24 w-full rounded-xl bg-muted animate-pulse" />
+              <div className="h-14 w-full rounded-full bg-muted animate-pulse" />
+            </div>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -129,15 +167,20 @@ function ProductDetailContent({ productId }: { productId: string }) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-          <h1 className="text-2xl font-bold text-primary">Producto no encontrado</h1>
-          <Link href="/store">
-            <Button className="mt-4">
+        <main className="ap-shell pt-36 pb-24 text-center">
+          <p className="ap-overline">Catalogo</p>
+          <h1 className="ap-title2 mt-3">Producto no encontrado</h1>
+          <p className="ap-sub mt-3 max-w-md mx-auto">
+            El equipo que buscas no esta disponible o cambio de ubicacion en el catalogo.
+          </p>
+          <Link href="/store" className="inline-block mt-8">
+            <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-7 py-6">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver a la tienda
             </Button>
           </Link>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -145,198 +188,266 @@ function ProductDetailContent({ productId }: { productId: string }) {
   const currentImage = images[activeImageIndex] || '/placeholder.svg';
   const waPhone = PHONE_NUMBERS.tier1.replace(/\D/g, '');
   const waText = encodeURIComponent(
-    `Hola Rockink IMM, quiero informacion de este producto: ${product.name} (ID: ${product.id})`
+    `Hola Rockink IMM, quiero cotizar e informacion tecnica del equipo: ${product.name} (ID: ${product.id})`
   );
   const waLink = `https://wa.me/${waPhone}?text=${waText}`;
+  const inStock = product.inStock !== false;
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <Link href="/store" className="text-primary hover:text-secondary flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Volver a la tienda
-        </Link>
-      </div>
+      <main className="pt-28 pb-20">
+        {/* Breadcrumb */}
+        <div className="ap-shell mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link href="/store" className="ap-link text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              Volver al catalogo
+            </Link>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Link href="/store" className="hover:text-foreground transition-colors">
+                Tienda
+              </Link>
+              <span>/</span>
+              <span className="text-foreground font-medium">{product.category}</span>
+            </div>
+          </div>
+        </div>
 
-      <section className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="border-border/60">
-          <CardContent className="p-5 sm:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
+        {/* Bloque principal de producto */}
+        <section className="ap-shell">
+          <div className="ap-card p-6 sm:p-8 lg:p-10">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-8 lg:gap-12 items-start">
+              {/* Galería de imágenes */}
+              <div className="space-y-3">
                 <button
                   type="button"
                   onClick={() => setOpenZoom(true)}
-                  className="relative w-full h-[340px] sm:h-[460px] bg-card rounded-xl overflow-hidden border border-border"
+                  className="group relative w-full h-[340px] sm:h-[440px] bg-muted rounded-2xl overflow-hidden border border-border cursor-zoom-in"
                 >
                   <Image
                     src={currentImage}
                     alt={product.name}
                     fill
-                    quality={82}
+                    quality={85}
                     sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover"
+                    className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.03]"
                   />
+                  <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/85 backdrop-blur-sm border border-border text-xs font-medium text-foreground">
+                    <ZoomIn className="w-3.5 h-3.5" />
+                    Ampliar
+                  </span>
                 </button>
-                <div className="grid grid-cols-4 gap-2">
-                  {images.map((img, idx) => (
-                    <button
-                      key={`${product.id}-${idx}`}
-                      type="button"
-                      onClick={() => setActiveImageIndex(idx)}
-                      className={`relative h-16 sm:h-20 rounded-md overflow-hidden border ${
-                        idx === activeImageIndex ? 'border-primary ring-2 ring-primary/30' : 'border-border'
-                      }`}
-                    >
-                      <Image
-                        src={img}
-                        alt={`${product.name} ${idx + 1}`}
-                        fill
-                        quality={68}
-                        sizes="96px"
-                        className="object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
+
+                {images.length > 1 && (
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
+                    {images.map((img, idx) => (
+                      <button
+                        key={`${product.id}-${idx}`}
+                        type="button"
+                        data-active={idx === activeImageIndex}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className="pd-thumb h-16 sm:h-20"
+                      >
+                        <Image
+                          src={img}
+                          alt={`${product.name} vista ${idx + 1}`}
+                          fill
+                          quality={70}
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-5">
+              {/* Información y acciones */}
+              <div className="flex flex-col space-y-6">
                 <div>
-                  <span className="inline-block bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold mb-3">
-                    {product.category}
-                  </span>
-                  <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">{product.name}</h1>
-                  <p className="text-muted-foreground">{product.description}</p>
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <span className="pd-badge" data-tone="primary">
+                      {product.category}
+                    </span>
+                    {product.brand && <span className="pd-badge">{product.brand}</span>}
+                    <span className="pd-badge" data-tone={inStock ? 'primary' : undefined}>
+                      {inStock ? 'En stock' : 'Bajo pedido'}
+                    </span>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+                    {product.name}
+                  </h1>
+                  <p className="mt-4 text-base text-muted-foreground leading-relaxed">
+                    {product.description}
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[0, 1, 2].map((i) => (
-                    <Card key={i} className="border-primary/20">
-                      <CardContent className="p-3">
-                        <p className="text-sm line-clamp-2">
-                          {product.specifications[i] || 'Calidad premium para mejor rendimiento'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                {/* Puntos clave de especificación */}
+                {product.specifications.length > 0 && (
+                  <div className="rounded-xl bg-muted p-4 space-y-2.5 border border-border">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Puntos clave del equipo
+                    </p>
+                    <ul className="space-y-2">
+                      {product.specifications.slice(0, 3).map((spec, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
+                          <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <span>{spec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* CTAs principales */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <Button
                     onClick={handleAddCart}
-                    className="bg-primary hover:bg-primary/90 text-base py-6"
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-base font-semibold py-6"
                   >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    {added ? 'Agregado' : 'Agregar al carrito'}
+                    {added ? (
+                      <>
+                        <Check className="w-5 h-5 mr-2" />
+                        Anadido al carrito
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-5 h-5 mr-2" />
+                        Agregar al carrito
+                      </>
+                    )}
                   </Button>
-                  <a href={waLink} target="_blank" rel="noreferrer">
-                    <Button variant="outline" className="w-full text-base py-6">
+                  <a href={waLink} target="_blank" rel="noreferrer" className="block">
+                    <Button
+                      variant="outline"
+                      className="w-full rounded-full text-base font-semibold py-6 border-border hover:border-primary hover:text-primary"
+                    >
                       <MessageCircle className="w-5 h-5 mr-2" />
-                      WhatsApp
+                      Cotizar por WhatsApp
                     </Button>
                   </a>
                 </div>
 
-                <Button onClick={handleDownloadFicha} variant="ghost" className="w-full sm:w-auto">
-                  <Download className="w-4 h-4 mr-2" />
-                  Descargar ficha tecnica
-                </Button>
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={handleDownloadFicha}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Descargar ficha tecnica (.txt)
+                  </button>
+                  {added && (
+                    <Link href="/cart" className="ap-link text-sm">
+                      Ir al carrito
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  )}
+                </div>
 
-                {added && (
-                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-center">
-                    Producto agregado exitosamente
+                {/* Garantías operativas */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+                    <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                    <span>Garantia directa</span>
                   </div>
+                  <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+                    <Truck className="w-4 h-4 text-primary shrink-0" />
+                    <span>Envio a nivel nacional</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+                    <Wrench className="w-4 h-4 text-primary shrink-0" />
+                    <span>Soporte y repuestos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pestañas de detalle técnico */}
+        <section className="ap-shell mt-8">
+          <div className="ap-card p-6 sm:p-8">
+            <div className="mb-6 overflow-x-auto pb-1">
+              <div className="ap-segment">
+                <button
+                  type="button"
+                  data-active={activeTab === 'description'}
+                  onClick={() => setActiveTab('description')}
+                >
+                  Descripcion
+                </button>
+                <button
+                  type="button"
+                  data-active={activeTab === 'specs'}
+                  onClick={() => setActiveTab('specs')}
+                >
+                  Especificaciones ({product.specifications.length})
+                </button>
+                {hasValidVideo && (
+                  <button
+                    type="button"
+                    data-active={activeTab === 'video'}
+                    onClick={() => setActiveTab('video')}
+                  >
+                    Video demostrativo
+                  </button>
+                )}
+                {has3dModel && (
+                  <button
+                    type="button"
+                    data-active={activeTab === 'model3d'}
+                    onClick={() => setActiveTab('model3d')}
+                  >
+                    Modelo 3D
+                  </button>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-4 py-2">
-        <Card className="border-border/60">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-wrap gap-2 mb-6">
-              <button
-                type="button"
-                onClick={() => setActiveTab('description')}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                  activeTab === 'description'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                Descripcion
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('specs')}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                  activeTab === 'specs'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                Especificaciones
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('video')}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                  activeTab === 'video'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                Video
-              </button>
-              {has3dModel && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('model3d')}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-                    activeTab === 'model3d'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  Modelo 3D
-                </button>
-              )}
-            </div>
 
             {activeTab === 'description' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-primary">Descripcion del producto</h2>
+              <div className="max-w-3xl space-y-3">
+                <h2 className="text-lg font-semibold text-foreground">Acerca de este equipo</h2>
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
               </div>
             )}
 
             {activeTab === 'specs' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-primary">Especificaciones tecnicas</h2>
-                <ul className="space-y-2">
-                  {product.specifications.map((spec, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
-                      <span className="text-foreground">{spec}</span>
-                    </li>
-                ))}
-              </ul>
-            </div>
-          )}
+              <div className="max-w-3xl">
+                <h2 className="text-lg font-semibold text-foreground mb-4">
+                  Especificaciones tecnicas
+                </h2>
+                {product.specifications.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {product.specifications.map((spec, idx) => (
+                      <div key={idx} className="pd-spec-row">
+                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <span className="text-foreground text-sm sm:text-base">{spec}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Consulta por WhatsApp para recibir la hoja tecnica completa del fabricante.
+                  </p>
+                )}
+              </div>
+            )}
 
-            {activeTab === 'video' && (
+            {activeTab === 'video' && hasValidVideo && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-primary">Video del producto</h2>
-                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <h2 className="text-lg font-semibold text-foreground">Video del equipo</h2>
+                <div className="aspect-video bg-muted rounded-xl overflow-hidden border border-border">
                   <iframe
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${product.youtubeId}`}
-                    title="Video del producto"
+                    src={`https://www.youtube.com/embed/${youtubeId}`}
+                    title={`Video de ${product.name}`}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -348,7 +459,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
 
             {activeTab === 'model3d' && has3dModel && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-primary">Modelo 3D</h2>
+                <h2 className="text-lg font-semibold text-foreground">Vista 3D interactiva</h2>
                 {isGlbModel ? (
                   <>
                     <Script
@@ -356,7 +467,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
                       src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
                       strategy="afterInteractive"
                     />
-                    <div className="w-full h-[440px] rounded-lg overflow-hidden bg-black/80 border border-border">
+                    <div className="w-full h-[440px] rounded-xl overflow-hidden bg-muted border border-border">
                       {createElement('model-viewer', {
                         src: model3dUrl,
                         alt: `Modelo 3D de ${product.name}`,
@@ -372,7 +483,7 @@ function ProductDetailContent({ productId }: { productId: string }) {
                     </div>
                   </>
                 ) : (
-                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                  <div className="aspect-video bg-muted rounded-xl overflow-hidden border border-border">
                     <iframe
                       width="100%"
                       height="100%"
@@ -386,58 +497,48 @@ function ProductDetailContent({ productId }: { productId: string }) {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-primary">Productos relacionados</h2>
-          <Link href="/store" className="text-sm text-primary underline">
-            Ver mas
-          </Link>
-        </div>
-
-        {relatedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {relatedProducts.map((item) => (
-              <Link key={item.id} href={`/product/${item.id}`} className="group">
-                <Card className="overflow-hidden h-full border-border/60 hover:border-primary/50 transition-colors">
-                  <div className="relative h-40 w-full">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      quality={70}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <p className="text-xs text-muted-foreground mb-1">{item.category}</p>
-                    <h3 className="font-semibold line-clamp-2">{item.name}</h3>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
           </div>
-        ) : (
-          <p className="text-muted-foreground">No hay productos relacionados por ahora.</p>
-        )}
-      </section>
+        </section>
+
+        {/* Productos relacionados */}
+        <section className="ap-shell mt-16">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+            <div>
+              <p className="ap-overline">Misma linea</p>
+              <h2 className="ap-title2 mt-2">Equipos relacionados</h2>
+            </div>
+            <Link href="/store" className="ap-link text-sm">
+              Ver catalogo completo
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {relatedProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {relatedProducts.map((item) => (
+                <ProductCard key={item.id} product={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="ap-card p-8 text-center">
+              <p className="text-muted-foreground">No hay otros equipos en esta categoria por ahora.</p>
+            </div>
+          )}
+        </section>
+      </main>
 
       <Footer />
 
       <Dialog open={openZoom} onOpenChange={setOpenZoom}>
-        <DialogContent className="sm:max-w-4xl p-2">
-          <div className="relative w-full h-[70vh] rounded-md overflow-hidden bg-black">
+        <DialogContent className="sm:max-w-4xl p-2 bg-background border-border">
+          <div className="relative w-full h-[70vh] rounded-xl overflow-hidden bg-muted">
             <Image
               src={currentImage}
               alt={product.name}
               fill
-              quality={88}
+              quality={90}
               sizes="100vw"
-              className="object-contain"
+              className="object-contain p-4"
             />
           </div>
         </DialogContent>
@@ -450,11 +551,5 @@ export default function ProductDetail() {
   const params = useParams<{ id: string }>();
   const id = typeof params?.id === 'string' ? params.id : '';
 
-  return (
-    <CartProvider>
-      <ProductDetailContent productId={id} />
-    </CartProvider>
-  );
+  return <ProductDetailContent productId={id} />;
 }
-
-

@@ -798,7 +798,7 @@
    Accesibilidad — reduced motion / táctil
    ============================================================ */
 
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .hero-kenburns,
   .ap-marquee-track,
   .whatsapp-ripple,
@@ -1352,7 +1352,7 @@
    Accesibilidad — apagar movimiento
    ============================================================ */
 
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .ap-hero-scroll {
     animation: none;
   }
@@ -1852,7 +1852,7 @@
   display: inline-block;
 }
 
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   .st-skeleton::after,
   .st-card-in {
     animation: none;
@@ -1870,5 +1870,328 @@
   .ap-service-card:hover .ap-service-icon,
   .reveal-block.is-visible .ap-stat-value {
     animation: none;
+  }
+}
+
+
+/* ============================================================
+   PREMIUM v2 — rediseño de la home (noviembre 2026)
+   Todo se apaga bajo prefers-reduced-motion al final del bloque.
+   ============================================================ */
+
+/* --- Hero: etiquetas de confianza bajo los CTA --- */
+.ap-hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 2.5rem;
+}
+
+.ap-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.ap-hero-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary);
+}
+
+/* --- Cifras en tarjeta --- */
+.ap-stat-card {
+  position: relative;
+  padding: 2.25rem 1.5rem;
+  border-radius: 1.4rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: transform 0.35s var(--ease-out-soft), border-color 0.3s ease, box-shadow 0.35s ease;
+}
+
+.ap-stat-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.07);
+}
+
+/* --- Servicios con fotografía --- */
+.ap-service-media {
+  position: relative;
+  height: 11rem;
+  margin: -2rem -2rem 1.5rem;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.ap-service-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s var(--ease-out-soft);
+}
+
+.ap-service-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(6, 10, 9, 0.35) 100%);
+}
+
+.ap-service-card:hover .ap-service-media img {
+  transform: scale(1.07);
+}
+
+.ap-service-num {
+  position: absolute;
+  top: 0.9rem;
+  right: 1rem;
+  z-index: 1;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #1d1d1f;
+  font-variant-numeric: tabular-nums;
+}
+
+.ap-service-card .ap-service-icon {
+  margin-top: -3.4rem;
+  position: relative;
+  z-index: 1;
+  background: var(--card);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+/* --- Brillo que sigue al cursor (useSpotlight escribe --mx / --my) --- */
+.ap-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.ap-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in oklab, var(--primary) 14%, transparent),
+    transparent 60%
+  );
+  transition: opacity 0.35s ease;
+}
+
+.ap-spotlight:hover::before {
+  opacity: 1;
+}
+
+/* --- Galería: rótulo al pasar el cursor --- */
+.ap-gallery-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.25rem;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(6, 10, 9, 0) 40%, rgba(6, 10, 9, 0.85) 100%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.ap-gallery-tile:hover .ap-gallery-overlay,
+.ap-gallery-tile:focus-within .ap-gallery-overlay {
+  opacity: 1;
+}
+
+.ap-gallery-tag {
+  align-self: flex-start;
+  margin-bottom: 0.45rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ap-gallery-caption {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  transform: translateY(8px);
+  transition: transform 0.35s var(--ease-out-soft);
+}
+
+.ap-gallery-tile:hover .ap-gallery-caption {
+  transform: translateY(0);
+}
+
+/* En pantallas táctiles no hay hover: el rótulo queda siempre visible */
+@media (hover: none) {
+  .ap-gallery-overlay {
+    opacity: 1;
+  }
+  .ap-gallery-caption {
+    transform: none;
+  }
+}
+
+/* --- Vitrina de productos reales --- */
+.ap-featured-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ap-featured-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ap-featured-tabs button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* --- Línea de tiempo que se enciende con el scroll ---
+   El contenedor lleva data-scrollfx (--p 0→1) y cada paso su índice --i. */
+.ap-timeline-item {
+  --seg: clamp(0, calc(var(--p, 1) * 4 - var(--i, 0) - 0.4), 1);
+  --dot: clamp(0, calc(var(--p, 1) * 4 - var(--i, 0) + 0.6), 1);
+}
+
+.ap-timeline-item::before {
+  background: color-mix(in oklab, var(--primary) calc(var(--dot) * 100%), var(--border));
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) calc(var(--dot) * 16%), transparent);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ap-timeline-item::after {
+  background: linear-gradient(
+    180deg,
+    var(--primary) calc(var(--seg) * 100%),
+    var(--border) calc(var(--seg) * 100%)
+  );
+}
+
+@media (min-width: 900px) {
+  .ap-timeline-item::after {
+    background: linear-gradient(
+      90deg,
+      var(--primary) calc(var(--seg) * 100%),
+      var(--border) calc(var(--seg) * 100%)
+    );
+  }
+}
+
+/* --- Títulos de sección: entran desenfocados al revelarse --- */
+.reveal-block .ap-title2 {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(14px);
+  transition: opacity 0.9s var(--ease-out-soft), filter 0.9s var(--ease-out-soft),
+    transform 0.9s var(--ease-out-soft);
+  transition-delay: 120ms;
+}
+
+.reveal-block.is-visible .ap-title2 {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+
+/* --- Ficha de producto y carrito --- */
+.pd-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  transition: border-color 0.2s ease, transform 0.25s var(--ease-out-soft);
+}
+
+.pd-thumb:hover {
+  transform: translateY(-2px);
+}
+
+.pd-thumb.is-active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent);
+}
+
+.pd-spec-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pd-spec-row:last-child {
+  border-bottom: none;
+}
+
+.pd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pd-badge--ok {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+.pd-badge--muted {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-stat-card:hover,
+  .pd-thumb:hover {
+    transform: none;
+  }
+
+  .ap-service-card:hover .ap-service-media img {
+    transform: none;
+  }
+
+  .reveal-block .ap-title2 {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+
+  .ap-spotlight::before {
+    display: none;
   }
 }

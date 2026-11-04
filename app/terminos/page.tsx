@@ -1,6 +1,5 @@
 ﻿import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
-import { CartProvider } from '@/lib/cart-context';
 
 function TermsContent() {
   return (
@@ -75,8 +74,6 @@ function TermsContent() {
 
 export default function TermsPage() {
   return (
-    <CartProvider>
       <TermsContent />
-    </CartProvider>
   );
 }

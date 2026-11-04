@@ -11,24 +11,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const defaultValue: AuthContextType = {
-  isLoggedIn: false,
-  login: async () => ({ ok: false }),
-  logout: () => {},
-  isMounted: false,
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Hidratar desde sessionStorage
-    const saved = sessionStorage.getItem('adminLoggedIn');
-    if (saved === 'true') {
-      setIsLoggedIn(true);
-    }
-    setIsMounted(true);
+    let active = true;
+
+    const verifyServerSession = async () => {
+      try {
+        const res = await fetch('/api/admin/login', { cache: 'no-store' });
+        if (!active) return;
+        if (res.ok) {
+          setIsLoggedIn(true);
+          sessionStorage.setItem('adminLoggedIn', 'true');
+        } else {
+          setIsLoggedIn(false);
+          sessionStorage.removeItem('adminLoggedIn');
+        }
+      } catch {
+        if (!active) return;
+        const saved = sessionStorage.getItem('adminLoggedIn');
+        setIsLoggedIn(saved === 'true');
+      } finally {
+        if (active) setIsMounted(true);
+      }
+    };
+
+    void verifyServerSession();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const login = async (
@@ -72,11 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isMounted,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextType {
